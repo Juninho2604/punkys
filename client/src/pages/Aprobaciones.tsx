@@ -1,0 +1,89 @@
+import { useCallback, useEffect, useState } from 'react'
+import { api } from '../lib/api'
+import { fmtBs, fmtFecha } from '../lib/format'
+import { useToast } from '../lib/toast'
+import { usePend } from '../components/Shell'
+import type { Quote } from '../lib/types'
+import { SERVICIO_NOMBRE } from './Cotizacion'
+
+const COLUMNAS = [
+  { estado: 'pendiente', titulo: 'Pendiente', dot: 'var(--warning-dot)' },
+  { estado: 'aprobada', titulo: 'Aprobado', dot: 'var(--success-600)' },
+  { estado: 'rechazada', titulo: 'Rechazado', dot: 'var(--danger-500)' },
+] as const
+
+export function Aprobaciones() {
+  const toast = useToast()
+  const { refreshPend } = usePend()
+  const [quotes, setQuotes] = useState<Quote[]>([])
+
+  const cargar = useCallback(() => {
+    api.get<{ quotes: Quote[] }>('/quotes').then((r) => setQuotes(r.quotes)).catch(console.error)
+  }, [])
+
+  useEffect(cargar, [cargar])
+
+  async function accion(q: Quote, ruta: 'approve' | 'reject' | 'reopen') {
+    try {
+      await api.post(`/quotes/${q.id}/${ruta}`)
+      toast(
+        ruta === 'approve' ? `${q.numero} aprobada ✓` : ruta === 'reject' ? `${q.numero} rechazada` : `${q.numero} devuelta a pendiente`,
+      )
+      cargar()
+      refreshPend()
+    } catch (err) {
+      toast(err instanceof Error ? err.message : 'No se pudo procesar')
+    }
+  }
+
+  return (
+    <div className="fade-up">
+      <div style={{ marginBottom: 18 }}>
+        <h1 className="h1-module">Tablero de aprobaciones</h1>
+        <p className="subtitle">Cotizaciones pendientes de decisión de Cuentas por Cobrar.</p>
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 16, alignItems: 'start' }}>
+        {COLUMNAS.map((col) => {
+          const items = quotes.filter((q) => q.estado === col.estado)
+          return (
+            <div key={col.estado} className="kanban-col">
+              <div className="kanban-col-head">
+                <span className="kanban-dot" style={{ background: col.dot }} />
+                <span style={{ font: '700 14px var(--font-display)', color: 'var(--brand-900)' }}>{col.titulo}</span>
+                <span className="kanban-count">{items.length}</span>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {items.map((q) => (
+                  <div key={q.id} className="kanban-card">
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span className="cell-id">{q.numero}</span>
+                      <span className="caption">{fmtFecha(q.created_at)}</span>
+                    </div>
+                    <div style={{ font: '800 14.5px var(--font-ui)', color: 'var(--ink-900)' }}>{q.razon_social}</div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ background: 'var(--sky-50)', color: 'var(--brand-800)', font: '700 11.5px var(--font-ui)', padding: '3px 9px', borderRadius: 999 }}>
+                        {SERVICIO_NOMBRE[q.servicio] ?? q.servicio}
+                      </span>
+                      <span style={{ font: '800 14px var(--font-ui)', color: 'var(--brand-900)' }}>{fmtBs(q.total)}</span>
+                    </div>
+                    {q.estado === 'rechazada' && q.motivo_rechazo && (
+                      <div className="caption" style={{ color: 'var(--danger-500)' }}>{q.motivo_rechazo}</div>
+                    )}
+                    {q.estado === 'pendiente' ? (
+                      <div style={{ display: 'flex', gap: 8, marginTop: 4, paddingTop: 10, borderTop: '1px solid var(--line-soft)' }}>
+                        <button className="btn-approve-soft" onClick={() => accion(q, 'approve')}>✓ Aprobar</button>
+                        <button className="btn-reject-soft" onClick={() => accion(q, 'reject')}>✕ Rechazar</button>
+                      </div>
+                    ) : (
+                      <a className="kanban-revert" onClick={() => accion(q, 'reopen')}>↩ Devolver a pendiente</a>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}

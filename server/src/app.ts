@@ -1,0 +1,27 @@
+import express from 'express'
+import cors from 'cors'
+import cookieParser from 'cookie-parser'
+import { config } from './config.js'
+import { errorHandler } from './middleware/errors.js'
+import { authRouter } from './routes/auth.js'
+import { quotesRouter } from './routes/quotes.js'
+import { shipmentsRouter } from './routes/shipments.js'
+import { dashboardRouter } from './routes/dashboard.js'
+import { systemRouter } from './routes/system.js'
+
+export function createApp() {
+  const app = express()
+  app.use(cors({ origin: config.clientOrigin, credentials: true }))
+  app.use(express.json())
+  app.use(cookieParser())
+
+  app.get('/api/health', (_req, res) => res.json({ ok: true }))
+  app.use('/api/auth', authRouter)
+  app.use('/api/quotes', quotesRouter)
+  app.use('/api/shipments', shipmentsRouter)
+  app.use('/api/dashboard', dashboardRouter)
+  app.use('/api/system', systemRouter)
+
+  app.use(errorHandler)
+  return app
+}
