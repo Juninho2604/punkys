@@ -1,0 +1,43 @@
+name: Deploy a VPS
+
+# Despliega automáticamente al hacer push a main.
+# También se puede lanzar a mano desde la pestaña Actions (workflow_dispatch).
+#
+# Requiere estos Secrets en el repo (Settings → Secrets and variables → Actions):
+#   VPS_HOST  → IP pública del Contabo
+#   VPS_USER  → usuario de deploy (ej: deploy)
+#   VPS_SSH_KEY → clave PRIVADA SSH cuya pública está en el authorized_keys del VPS
+#   VPS_APP_DIR (opcional) → ruta del repo en el VPS (default: ~/punky-intranet)
+#
+# El primer despliegue (clonar repo + crear .env + primer up) se hace a mano una
+# vez, siguiendo docs/deploy-vps.md. A partir de ahí este workflow se encarga.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-vps
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Desplegar por SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set -e
+            cd "${{ secrets.VPS_APP_DIR || '~/punky-intranet' }}"
+            echo "▶ Actualizando código…"
+            git pull origin main
+            echo "▶ Reconstruyendo y levantando contenedores…"
+            docker compose up -d --build
+            echo "▶ Limpiando imágenes viejas…"
+            docker image prune -f
+            docker compose ps

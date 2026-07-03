@@ -25,7 +25,7 @@ authRouter.post('/login', async (req, res, next) => {
     res.cookie(COOKIE_NAME, signToken(user), {
       httpOnly: true,
       sameSite: 'lax',
-      secure: config.nodeEnv === 'production',
+      secure: config.cookieSecure,
       maxAge: (recordar ? 12 * 7 : 12) * 60 * 60 * 1000,
     })
     res.json({ user })

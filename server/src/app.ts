@@ -11,6 +11,8 @@ import { systemRouter } from './routes/system.js'
 
 export function createApp() {
   const app = express()
+  // Detrás de Nginx: confía en el primer proxy para X-Forwarded-* (IP real y esquema para cookies Secure).
+  app.set('trust proxy', 1)
   app.use(cors({ origin: config.clientOrigin, credentials: true }))
   app.use(express.json())
   app.use(cookieParser())

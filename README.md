@@ -79,6 +79,20 @@ Wizard 4 pasos   →   Kanban aprueba    →   Envío creado auto     📧 + �
 └── docs/                 # integración Profit Plus, notificaciones
 ```
 
+## Despliegue en producción (VPS con Docker)
+
+Todo el stack (PostgreSQL + API + Nginx/frontend) se levanta con un solo comando vía Docker Compose:
+
+```bash
+cp .env.production.example .env   # rellenar POSTGRES_PASSWORD, JWT_SECRET, etc.
+docker compose up -d --build
+docker compose exec server node dist/db/seed.js   # solo la primera vez
+```
+
+El deploy continuo está automatizado con **GitHub Actions** (`.github/workflows/deploy.yml`): cada push a `main` reconstruye y actualiza los contenedores en el VPS por SSH.
+
+📖 **Guía completa paso a paso (Contabo/Ubuntu, hardening, HTTPS): [`docs/deploy-vps.md`](docs/deploy-vps.md).**
+
 ## Configuración por entorno (`server/.env`)
 
 Ver `.env.example` para la lista completa. Los tres interruptores importantes:

@@ -1,0 +1,71 @@
+# Stack de producción · Punky Intranet
+# Levanta:  db (PostgreSQL) · server (API Express) · web (Nginx + frontend)
+# Uso:      docker compose up -d --build
+# Variables:  se leen del archivo .env (copiar de .env.production.example)
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: punky
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?define POSTGRES_PASSWORD en .env}
+      POSTGRES_DB: punky_intranet
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U punky -d punky_intranet"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    # El puerto NO se expone al host: solo la red interna lo alcanza.
+
+  server:
+    build: ./server
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: "4000"
+      DATABASE_URL: postgres://punky:${POSTGRES_PASSWORD}@db:5432/punky_intranet
+      JWT_SECRET: ${JWT_SECRET:?define JWT_SECRET en .env}
+      CLIENT_ORIGIN: ${CLIENT_ORIGIN:-http://localhost}
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      # Notificaciones
+      EMAIL_PROVIDER: ${EMAIL_PROVIDER:-console}
+      EMAIL_FROM: ${EMAIL_FROM:-Punky Partners <notificaciones@punkypartners.com>}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_SECURE: ${SMTP_SECURE:-false}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      WHATSAPP_PROVIDER: ${WHATSAPP_PROVIDER:-console}
+      TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID:-}
+      TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN:-}
+      TWILIO_WHATSAPP_FROM: ${TWILIO_WHATSAPP_FROM:-}
+      WA_CLOUD_PHONE_NUMBER_ID: ${WA_CLOUD_PHONE_NUMBER_ID:-}
+      WA_CLOUD_ACCESS_TOKEN: ${WA_CLOUD_ACCESS_TOKEN:-}
+      # Profit Plus 2K12
+      PROFIT_PLUS_MODE: ${PROFIT_PLUS_MODE:-simulado}
+      PP_DB_HOST: ${PP_DB_HOST:-}
+      PP_DB_PORT: ${PP_DB_PORT:-1433}
+      PP_DB_NAME: ${PP_DB_NAME:-}
+      PP_DB_USER: ${PP_DB_USER:-}
+      PP_DB_PASSWORD: ${PP_DB_PASSWORD:-}
+    expose:
+      - "4000"
+
+  web:
+    build: ./client
+    restart: unless-stopped
+    depends_on:
+      - server
+    ports:
+      - "80:80"
+      # HTTPS (cuando actives dominio + certbot, ver docs/deploy-vps.md):
+      # - "443:443"
+
+volumes:
+  pgdata:

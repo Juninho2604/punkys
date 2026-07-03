@@ -12,6 +12,9 @@ export const config = {
   clientOrigin: env('CLIENT_ORIGIN', 'http://localhost:5173'),
   jwtSecret: env('JWT_SECRET', 'dev-secret-no-usar-en-produccion'),
   databaseUrl: env('DATABASE_URL', 'postgres://punky:punky_dev@localhost:5432/punky_intranet'),
+  // Cookie de sesión con flag Secure (solo se envía por HTTPS). Debe quedar en
+  // 'false' mientras se sirva por IP/HTTP y pasar a 'true' al activar el dominio con TLS.
+  cookieSecure: env('COOKIE_SECURE', 'false') === 'true',
 
   email: {
     provider: env('EMAIL_PROVIDER', 'console') as 'console' | 'smtp',
