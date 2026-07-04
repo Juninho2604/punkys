@@ -15,7 +15,10 @@ export const SERVICIO_NOMBRE: Record<string, string> = {
 }
 
 const PASOS = ['Cliente', 'Origen y destino', 'Carga y servicio', 'Precios y resumen']
-const ORIGENES = ['CDN Boleíta — Caracas', 'Almacén Valencia', 'Almacén Barquisimeto']
+// Sedes de origen de los despachos
+const ORIGENES = ['Almacén Boleíta', 'Almacén Principal']
+// Destino por defecto; solo se pide la ciudad si el envío va fuera de Caracas
+const CIUDAD_DEFAULT = 'Caracas'
 const RIF_RE = /^[VEJPG]-?\d{7,9}-?\d$/i
 
 interface Form {
@@ -24,6 +27,7 @@ interface Form {
   telefono: string
   contacto: string
   origen: string
+  otraCiudad: boolean
   destinoCiudad: string
   destinoDireccion: string
   peso: string
@@ -35,7 +39,7 @@ interface Form {
 
 const FORM_INICIAL: Form = {
   razonSocial: '', rif: '', telefono: '', contacto: '',
-  origen: ORIGENES[0], destinoCiudad: '', destinoDireccion: '',
+  origen: ORIGENES[0], otraCiudad: false, destinoCiudad: '', destinoDireccion: '',
   peso: '', volumen: '', bultos: '', valor: '', servicio: null,
 }
 
@@ -85,7 +89,7 @@ export function Cotizacion() {
       if (!RIF_RE.test(form.rif.trim())) e.rif = 'RIF inválido. Formato: J-00000000-0'
     }
     if (p === 1) {
-      if (form.destinoCiudad.trim().length < 2) e.destinoCiudad = 'Indica la ciudad destino'
+      if (form.otraCiudad && form.destinoCiudad.trim().length < 2) e.destinoCiudad = 'Indica la ciudad destino'
       if (form.destinoDireccion.trim().length < 5) e.destinoDireccion = 'Indica la dirección de entrega'
     }
     if (p === 2) {
@@ -106,7 +110,7 @@ export function Cotizacion() {
         telefono: form.telefono.trim(),
         contacto: form.contacto.trim(),
         origen: form.origen,
-        destinoCiudad: form.destinoCiudad.trim(),
+        destinoCiudad: form.otraCiudad ? form.destinoCiudad.trim() : CIUDAD_DEFAULT,
         destinoDireccion: form.destinoDireccion.trim(),
         pesoKg: num(form.peso),
         volumenM3: num(form.volumen),
@@ -149,7 +153,7 @@ export function Cotizacion() {
       <input
         className={`input-text${errores[k] ? ' error' : ''}`}
         placeholder={props.placeholder}
-        value={form[k] ?? ''}
+        value={String(form[k] ?? '')}
         onChange={(e) => set(k)(e.target.value)}
       />
       {errores[k] && <div className="field-error">{errores[k]}</div>}
@@ -213,15 +217,36 @@ export function Cotizacion() {
         {paso === 1 && (
           <>
             <h2 className="h2">Origen y destino</h2>
-            <p className="subtitle" style={{ margin: '0 0 22px' }}>Define la ruta del envío.</p>
+            <p className="subtitle" style={{ margin: '0 0 22px' }}>Define la ruta del envío. Las entregas son en Caracas salvo que indiques otra ciudad.</p>
             <div className="form-grid-2">
               <div className="field">
-                <label className="field-label">Origen</label>
+                <label className="field-label">Sede de origen</label>
                 <select className="input-text" value={form.origen} onChange={(e) => set('origen')(e.target.value)}>
                   {ORIGENES.map((o) => <option key={o}>{o}</option>)}
                 </select>
               </div>
-              {input('destinoCiudad', 'Ciudad destino', { placeholder: 'Ej: Maracaibo' })}
+              <div className="field">
+                <label className="field-label">Ciudad destino</label>
+                <label
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px',
+                    border: '1.5px solid var(--line-100)', borderRadius: 10, background: '#fbfdff',
+                    font: '600 14px var(--font-ui)', color: 'var(--ink-900)', cursor: 'pointer',
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={form.otraCiudad}
+                    onChange={(e) => {
+                      setForm((f) => ({ ...f, otraCiudad: e.target.checked, destinoCiudad: '' }))
+                      setErrores((er) => ({ ...er, destinoCiudad: '' }))
+                    }}
+                    style={{ width: 16, height: 16, accentColor: 'var(--brand-800)', flex: 'none' }}
+                  />
+                  {form.otraCiudad ? '¿Va a otra ciudad? Sí' : `${CIUDAD_DEFAULT} · ¿Va a otra ciudad?`}
+                </label>
+              </div>
+              {form.otraCiudad && input('destinoCiudad', '¿A qué ciudad va?', { placeholder: 'Ej: Maracaibo', full: true })}
               {input('destinoDireccion', 'Dirección de entrega', { placeholder: 'Av., calle, local, punto de referencia', full: true })}
             </div>
           </>
@@ -266,7 +291,7 @@ export function Cotizacion() {
             <p className="subtitle" style={{ margin: '0 0 22px' }}>Revisa el desglose antes de generar la cotización.</p>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 20 }}>
               <span className="chip">{form.razonSocial} · {form.rif.toUpperCase()}</span>
-              <span className="chip">{form.origen.split('—')[0].trim()} → {form.destinoCiudad}</span>
+              <span className="chip">{form.origen} → {form.otraCiudad ? form.destinoCiudad : CIUDAD_DEFAULT}</span>
               <span className="chip">{num(form.peso).toLocaleString('es-VE')} kg · {Math.max(1, Math.round(num(form.bultos)))} bultos</span>
               <span className="chip">{desglose.sv.nombre}</span>
             </div>

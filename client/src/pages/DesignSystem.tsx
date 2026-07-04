@@ -139,7 +139,7 @@ export function DesignSystem() {
               <input className="input-text error" defaultValue="J-123" readOnly />
               <div className="field-error" style={{ marginTop: 4 }}>RIF inválido. Formato: J-00000000-0</div>
             </div>
-            <input className="input-text" defaultValue="CDN Boleíta — Caracas" disabled />
+            <input className="input-text" defaultValue="Almacén Boleíta" disabled />
           </div>
         </div>
       </div>
