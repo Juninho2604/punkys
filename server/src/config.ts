@@ -15,6 +15,9 @@ export const config = {
   // Cookie de sesión con flag Secure (solo se envía por HTTPS). Debe quedar en
   // 'false' mientras se sirva por IP/HTTP y pasar a 'true' al activar el dominio con TLS.
   cookieSecure: env('COOKIE_SECURE', 'false') === 'true',
+  // Clave de acceso del Centro de Operaciones (modo TV, solo lectura).
+  // Vacía = modo TV deshabilitado. URL: /tv/<clave>
+  tvAccessKey: process.env.TV_ACCESS_KEY ?? '',
 
   email: {
     provider: env('EMAIL_PROVIDER', 'console') as 'console' | 'smtp',

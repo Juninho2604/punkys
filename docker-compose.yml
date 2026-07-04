@@ -43,6 +43,7 @@ services:
       JWT_SECRET: ${JWT_SECRET:?define JWT_SECRET en .env}
       CLIENT_ORIGIN: ${CLIENT_ORIGIN:-http://localhost}
       COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      TV_ACCESS_KEY: ${TV_ACCESS_KEY:-}
       # Notificaciones
       EMAIL_PROVIDER: ${EMAIL_PROVIDER:-console}
       EMAIL_FROM: ${EMAIL_FROM:-Punky Partners <notificaciones@punkypartners.com>}

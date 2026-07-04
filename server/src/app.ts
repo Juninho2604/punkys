@@ -8,6 +8,7 @@ import { quotesRouter } from './routes/quotes.js'
 import { shipmentsRouter } from './routes/shipments.js'
 import { dashboardRouter } from './routes/dashboard.js'
 import { systemRouter } from './routes/system.js'
+import { tvRouter } from './routes/tv.js'
 
 export function createApp() {
   const app = express()
@@ -23,6 +24,7 @@ export function createApp() {
   app.use('/api/shipments', shipmentsRouter)
   app.use('/api/dashboard', dashboardRouter)
   app.use('/api/system', systemRouter)
+  app.use('/api/tv', tvRouter)
 
   app.use(errorHandler)
   return app

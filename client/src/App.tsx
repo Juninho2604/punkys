@@ -9,6 +9,7 @@ import { Aprobaciones } from './pages/Aprobaciones'
 import { Despacho } from './pages/Despacho'
 import { DespachoDetalle } from './pages/DespachoDetalle'
 import { DesignSystem } from './pages/DesignSystem'
+import { TvBoard } from './pages/TvBoard'
 import type { Rol } from './lib/types'
 
 function Protegida({ roles, children }: { roles?: Rol[]; children: React.ReactNode }) {
@@ -24,6 +25,8 @@ function Rutas() {
 
   return (
     <Routes>
+      {/* Centro de Operaciones (TV): acceso por clave en la URL, sin sesión */}
+      <Route path="/tv/:clave" element={<TvBoard />} />
       <Route path="/login" element={user ? <Navigate to="/" replace /> : <Login />} />
       <Route
         element={
