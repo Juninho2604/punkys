@@ -48,25 +48,30 @@ API **no** están expuestos a internet; solo el puerto 80.
 
 ### Piezas del servidor
 
-- `services/pricing.ts` — motor de precios, **fuente de verdad** (el cliente muestra
-  desglose en vivo pero el servidor siempre recalcula). Servicios: Terrestre
-  (Bs. 850 + 12/kg), Express 24h (2.400 + 28/kg), Cadena de Frío (1.900 + 22/kg),
-  Manejo Especial (1.400 + 18/kg). Seguro 2% del valor declarado, IVA 16%.
-  ⚠️ Tarifas de demo: **pendiente confirmar las reales con el cliente**.
-- `services/workflow.ts` — el corazón: crear cotización (upsert de cliente por RIF,
-  numeración `COT-XXXX` atómica vía tabla `counters`), enviar a aprobación (push a
-  Profit Plus + email a CxC), aprobar (crea envío `ENV-XXXX` con milestones y docs +
-  notifica cliente por WhatsApp/email, a despacho y al vendedor), rechazar,
-  devolver a pendiente (borra el envío solo si no avanzó), avanzar envío
-  (milestone + estado derivado de `done` 0–5 + WhatsApp al cliente), incidencias.
+- **Precios**: la cotización se compone de **renglones de productos** cuyos precios
+  vienen SIEMPRE del inventario (conector Profit Plus) — el servidor busca cada
+  producto por código, valida stock en la sede de origen y calcula subtotal + IVA
+  16%. El cliente jamás manda precios. (`services/workflow.ts::crearCotizacion`).
+  El modelo viejo de transporte (peso × tarifa, `services/pricing.ts::SERVICIOS`)
+  quedó solo para mostrar cotizaciones históricas.
+- `services/workflow.ts` — el corazón: crear cotización (valida stock por sede y
+  precios contra el inventario, upsert de cliente por RIF, numeración `COT-XXXX`
+  atómica vía `counters`, inserta `quote_items`), enviar a aprobación (push a
+  Profit Plus con renglones + email a CxC), aprobar (crea envío `ENV-XXXX` con
+  milestones y docs + notifica cliente por WhatsApp/email, a despacho y al
+  vendedor), rechazar, devolver a pendiente (borra el envío solo si no avanzó),
+  avanzar envío (milestone + estado derivado de `done` 0–5 + WhatsApp), incidencias.
 - `notifications/` — fachada `notifier` con proveedores intercambiables por env:
   email `console|smtp` (nodemailer), whatsapp `console|twilio|cloudapi` (fetch
   directo, sin SDKs). **Todo envío queda en `notification_log`**; un fallo de
   proveedor jamás rompe el workflow. Copys en `templates.ts`. Teléfonos venezolanos
   se normalizan a E.164 (`0412-…` → `+58412…`).
-- `integrations/profitplus/` — interfaz `ProfitPlusConnector` con `SimulatedConnector`
-  (activo, devuelve refs `PP-SIM-*`) y `SqlServerConnector` (esqueleto). Ver
-  `docs/integracion-profit-plus.md` para los requisitos pendientes del cliente.
+- `integrations/profitplus/` — interfaz `ProfitPlusConnector`: `pushQuote` (inyección),
+  `searchProducts`/`getProducts` (**inventario con stock por sede** — la fuente de
+  los renglones y precios de la cotización). `SimulatedConnector` activo sirve un
+  **catálogo DEMO** de 12 productos de mascotas para validar el flujo completo;
+  `SqlServerConnector` esqueleto. ⚠️ En producción los vendedores ven ese catálogo
+  demo hasta que se conecte el ERP. Ver `docs/integracion-profit-plus.md`.
 - `routes/tv.ts` — endpoint agregado del modo TV, protegido por `TV_ACCESS_KEY`.
 - `db/seed.ts` — datos demo (⚠️ **borra todo**; solo primera vez / desarrollo).
   `db/clean.ts` — borra datos de negocio, **conserva usuarios**, numeración a cero.
@@ -74,8 +79,10 @@ API **no** están expuestos a internet; solo el puerto 80.
 ### Modelo de datos (Postgres, migraciones Knex)
 
 `users` (rol: vendedor|cxc|despacho|admin) · `clients` (upsert por RIF) ·
-`quotes` (snapshot del cliente + desglose + estado generada|pendiente|aprobada|rechazada
-+ `pp_sync_status`) · `shipments` (estado derivado de `done` 0–5 + flag incidencia) ·
+`quotes` (snapshot del cliente + totales + estado generada|pendiente|aprobada|rechazada
++ `pp_sync_status`; los campos del modelo viejo de transporte son nullable) ·
+`quote_items` (**renglones**: código, nombre, precio_unit, cantidad, total) ·
+`shipments` (estado derivado de `done` 0–5 + flag incidencia) ·
 `shipment_milestones` (5 hitos) · `shipment_docs` · `notification_log` · `counters`.
 
 ### Roles y permisos
@@ -105,8 +112,11 @@ carpeta `design_handoff_punky_intranet` — no está en el repo). Tokens exactos
 - **Responsive**: <900px el sidebar es un drawer con hamburguesa; grillas colapsan;
   tablas con scroll horizontal. Verificado sin overflow en 390×844.
 - **Wizard**: origen = 2 sedes reales (**Almacén Boleíta**, **Almacén Principal**);
-  destino **Caracas por defecto** con casilla "¿Va a otra ciudad?" que despliega el
-  campo de ciudad.
+  destino **Caracas por defecto** con casilla "¿Va a otra ciudad?". Paso 3 =
+  **Productos**: buscador del inventario con stock por sede (verde/ámbar/rojo),
+  renglones con stepper de cantidad topado al stock, subtotal en vivo. Si cambia la
+  sede de origen se vacía la lista (el stock es por sede). Mobile-first, verificado
+  completo en 390×844.
 
 ## 5. Centro de Operaciones (modo TV)
 
@@ -174,13 +184,18 @@ Las migraciones se aplican **solas** al arrancar el contenedor `server`.
    desglose y firmas de **Director** y **Gerente de Cuentas por Cobrar**; cabe en
    una sola página. Botones: pantalla de éxito del wizard y tarjetas del kanban
    (🖨). Endpoint `GET /api/quotes/:id`.
+10. **Cotización por productos**: renglones desde el inventario (conector Profit
+    Plus) con validación de stock por sede, migración `quote_items`, wizard con
+    buscador mobile-first, hoja imprimible por renglones, kanban/dashboard/TV y
+    plantillas de notificación adaptados. La hoja imprimible ahora es por renglones
+    (con fallback al modelo viejo para históricas).
 
 ## 8. Pendientes / roadmap
 
 | Prioridad | Tema |
 |---|---|
 | 🔴 Alta | **Gestión de usuarios**: cambiar contraseñas (todas siguen en `punky123`), crear usuarios reales del equipo, desactivar |
-| 🔴 Alta | **Tarifas reales** de los 4 servicios (hoy son de demo) en `pricing.ts` |
+| 🔴 Alta | **Inventario real**: los precios/stock salen del catálogo DEMO del conector simulado hasta conectar Profit Plus (o definir una fuente interina) |
 | 🟡 Media | Credenciales **Twilio** (y luego migración a Cloud API con plantillas aprobadas de Meta) y **SMTP** — hoy todo en modo `console` |
 | 🟡 Media | **Profit Plus**: implementar `SqlServerConnector` cuando llegue el `.md` del cliente (requisitos en `docs/integracion-profit-plus.md`) |
 | 🟡 Media | Dominio + **HTTPS** (certbot; pasar `COOKIE_SECURE=true`) — guía lista en `docs/deploy-vps.md` |

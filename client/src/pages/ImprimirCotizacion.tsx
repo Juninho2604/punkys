@@ -46,6 +46,7 @@ export function ImprimirCotizacion() {
   }
   if (!quote) return null
 
+  const items = quote.items ?? []
   const emitida = new Date(quote.created_at).toLocaleDateString('es-VE', { day: '2-digit', month: 'long', year: 'numeric' })
 
   return (
@@ -98,9 +99,9 @@ export function ImprimirCotizacion() {
           </table>
         </section>
 
-        {/* Servicio */}
+        {/* Entrega */}
         <section className="ps-seccion">
-          <h2>Detalle del servicio</h2>
+          <h2>Datos de entrega</h2>
           <table className="ps-datos">
             <tbody>
               <tr>
@@ -110,58 +111,82 @@ export function ImprimirCotizacion() {
               <tr>
                 <td className="k">Dirección de entrega</td><td colSpan={3}>{quote.destino_direccion}</td>
               </tr>
-              <tr>
-                <td className="k">Tipo de servicio</td><td>{SERVICIO_NOMBRE[quote.servicio] ?? quote.servicio}</td>
-                <td className="k">Bultos</td><td>{quote.bultos}</td>
-              </tr>
-              <tr>
-                <td className="k">Peso</td><td>{fmtNum(quote.peso_kg)} kg</td>
-                <td className="k">Volumen</td><td>{fmtNum(quote.volumen_m3)} m³</td>
-              </tr>
-              <tr>
-                <td className="k">Valor declarado</td><td colSpan={3}>{fmtBs(quote.valor_declarado)}</td>
-              </tr>
             </tbody>
           </table>
         </section>
 
-        {/* Precios */}
+        {/* Renglones */}
         <section className="ps-seccion">
-          <h2>Desglose de precios</h2>
-          <table className="ps-precios">
-            <thead>
-              <tr><th>Concepto</th><th>Detalle</th><th className="num">Monto</th></tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>Flete base</td>
-                <td>{SERVICIO_NOMBRE[quote.servicio] ?? quote.servicio}</td>
-                <td className="num">{fmtBs(quote.flete_base)}</td>
-              </tr>
-              <tr>
-                <td>Cargo por peso</td>
-                <td>{fmtNum(quote.peso_kg)} kg</td>
-                <td className="num">{fmtBs(quote.cargo_peso)}</td>
-              </tr>
-              <tr>
-                <td>Seguro de mercancía</td>
-                <td>2% del valor declarado</td>
-                <td className="num">{fmtBs(quote.seguro)}</td>
-              </tr>
-              <tr className="sub">
-                <td colSpan={2}>Subtotal</td>
-                <td className="num">{fmtBs(quote.subtotal)}</td>
-              </tr>
-              <tr>
-                <td colSpan={2}>IVA (16%)</td>
-                <td className="num">{fmtBs(quote.iva)}</td>
-              </tr>
-              <tr className="total">
-                <td colSpan={2}>TOTAL</td>
-                <td className="num">{fmtBs(quote.total)}</td>
-              </tr>
-            </tbody>
-          </table>
+          <h2>Detalle de la cotización</h2>
+          {items.length > 0 ? (
+            <table className="ps-precios">
+              <thead>
+                <tr>
+                  <th>Código</th><th>Descripción</th><th className="num">Cant.</th>
+                  <th className="num">Precio unit.</th><th className="num">Monto</th>
+                </tr>
+              </thead>
+              <tbody>
+                {items.map((i) => (
+                  <tr key={i.id}>
+                    <td>{i.codigo}</td>
+                    <td>{i.nombre}</td>
+                    <td className="num">{i.cantidad}</td>
+                    <td className="num">{fmtBs(i.precio_unit)}</td>
+                    <td className="num">{fmtBs(i.total)}</td>
+                  </tr>
+                ))}
+                <tr className="sub">
+                  <td colSpan={4}>Subtotal</td>
+                  <td className="num">{fmtBs(quote.subtotal)}</td>
+                </tr>
+                <tr>
+                  <td colSpan={4}>IVA (16%)</td>
+                  <td className="num">{fmtBs(quote.iva)}</td>
+                </tr>
+                <tr className="total">
+                  <td colSpan={4}>TOTAL</td>
+                  <td className="num">{fmtBs(quote.total)}</td>
+                </tr>
+              </tbody>
+            </table>
+          ) : (
+            // Cotizaciones históricas (modelo de transporte por peso/servicio)
+            <table className="ps-precios">
+              <thead>
+                <tr><th>Concepto</th><th>Detalle</th><th className="num">Monto</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Flete base</td>
+                  <td>{SERVICIO_NOMBRE[quote.servicio ?? ''] ?? quote.servicio ?? '—'}</td>
+                  <td className="num">{quote.flete_base ? fmtBs(quote.flete_base) : '—'}</td>
+                </tr>
+                <tr>
+                  <td>Cargo por peso</td>
+                  <td>{quote.peso_kg ? `${fmtNum(quote.peso_kg)} kg` : '—'}</td>
+                  <td className="num">{quote.cargo_peso ? fmtBs(quote.cargo_peso) : '—'}</td>
+                </tr>
+                <tr>
+                  <td>Seguro de mercancía</td>
+                  <td>2% del valor declarado</td>
+                  <td className="num">{quote.seguro ? fmtBs(quote.seguro) : '—'}</td>
+                </tr>
+                <tr className="sub">
+                  <td colSpan={2}>Subtotal</td>
+                  <td className="num">{fmtBs(quote.subtotal)}</td>
+                </tr>
+                <tr>
+                  <td colSpan={2}>IVA (16%)</td>
+                  <td className="num">{fmtBs(quote.iva)}</td>
+                </tr>
+                <tr className="total">
+                  <td colSpan={2}>TOTAL</td>
+                  <td className="num">{fmtBs(quote.total)}</td>
+                </tr>
+              </tbody>
+            </table>
+          )}
         </section>
 
         <p className="ps-nota">

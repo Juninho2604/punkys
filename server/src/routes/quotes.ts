@@ -21,7 +21,26 @@ quotesRouter.get('/', async (req, res, next) => {
       .orderBy('q.created_at', 'desc')
       .limit(200)
     if (estado) q.where('q.estado', estado)
-    res.json({ quotes: await q })
+    const quotes = await q
+
+    // Resumen de renglones por cotización ("3 productos · 14 unidades")
+    const ids = quotes.map((x) => x.id)
+    const agg = ids.length
+      ? await db('quote_items')
+          .whereIn('quote_id', ids)
+          .groupBy('quote_id')
+          .select('quote_id')
+          .count('* as productos')
+          .sum('cantidad as unidades')
+      : []
+    const porQuote = new Map(agg.map((a: any) => [a.quote_id, a]))
+    for (const x of quotes) {
+      const a = porQuote.get(x.id) as any
+      x.resumen = a
+        ? `${a.productos} producto${Number(a.productos) === 1 ? '' : 's'} · ${a.unidades} und`
+        : (x.servicio ?? '—')
+    }
+    res.json({ quotes })
   } catch (err) {
     next(err)
   }
@@ -39,7 +58,8 @@ quotesRouter.get('/:id(\\d+)', async (req, res, next) => {
       res.status(404).json({ error: 'Cotización no encontrada' })
       return
     }
-    res.json({ quote })
+    const items = await db('quote_items').where({ quote_id: quote.id }).orderBy('id')
+    res.json({ quote: { ...quote, items } })
   } catch (err) {
     next(err)
   }
@@ -56,11 +76,14 @@ const nuevaSchema = z.object({
   origen: z.string().trim().min(2),
   destinoCiudad: z.string().trim().min(2, 'Ciudad destino requerida'),
   destinoDireccion: z.string().trim().min(5, 'Dirección de entrega requerida'),
-  pesoKg: z.coerce.number().positive('El peso debe ser mayor que 0'),
-  volumenM3: z.coerce.number().min(0).default(0),
-  bultos: z.coerce.number().int().positive().default(1),
-  valorDeclarado: z.coerce.number().min(0).default(0),
-  servicio: z.enum(['terrestre', 'express', 'frio', 'especial']),
+  items: z
+    .array(
+      z.object({
+        codigo: z.string().trim().min(1),
+        cantidad: z.coerce.number().int().positive('La cantidad debe ser mayor que 0'),
+      }),
+    )
+    .min(1, 'Agrega al menos un producto'),
 })
 
 quotesRouter.post('/', requireRole('vendedor'), async (req, res, next) => {

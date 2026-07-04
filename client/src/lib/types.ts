@@ -7,6 +7,22 @@ export interface User {
   rol: Rol
 }
 
+export interface QuoteItem {
+  id: number
+  codigo: string
+  nombre: string
+  precio_unit: string
+  cantidad: number
+  total: string
+}
+
+export interface Producto {
+  codigo: string
+  nombre: string
+  precio: number
+  stock: Record<string, number>
+}
+
 export interface Quote {
   id: number
   numero: string
@@ -17,14 +33,15 @@ export interface Quote {
   origen: string
   destino_ciudad: string
   destino_direccion: string
-  peso_kg: string
-  volumen_m3: string
-  bultos: number
-  valor_declarado: string
-  servicio: string
-  flete_base: string
-  cargo_peso: string
-  seguro: string
+  // Modelo viejo (cotizaciones históricas); las nuevas usan items
+  peso_kg: string | null
+  volumen_m3: string | null
+  bultos: number | null
+  valor_declarado: string | null
+  servicio: string | null
+  flete_base: string | null
+  cargo_peso: string | null
+  seguro: string | null
   subtotal: string
   iva: string
   total: string
@@ -33,6 +50,8 @@ export interface Quote {
   pp_sync_status: string
   pp_external_ref: string | null
   vendedor?: string
+  resumen?: string
+  items?: QuoteItem[]
   created_at: string
 }
 

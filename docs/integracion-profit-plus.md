@@ -14,9 +14,16 @@ La intranet nunca habla directo con Profit Plus: todo pasa por la interfaz
 
 El modo se elige por variable de entorno: `PROFIT_PLUS_MODE=simulado|sqlserver`.
 
-**Punto de integración actual:** al enviar una cotización a aprobación
-(`POST /api/quotes/:id/submit`) se llama a `profitPlus.pushQuote(...)` y el resultado queda
-en `quotes.pp_sync_status` y `quotes.pp_external_ref`.
+**Puntos de integración actuales:**
+
+1. **Inyección de cotizaciones**: al enviar a aprobación (`POST /api/quotes/:id/submit`)
+   se llama a `profitPlus.pushQuote(...)` con los **renglones de productos** (código,
+   nombre, cantidad, precio, total) y el resultado queda en `quotes.pp_sync_status` y
+   `quotes.pp_external_ref`.
+2. **Inventario** (`searchProducts`/`getProducts`): el wizard de cotización busca
+   productos, muestra **stock por sede** (Almacén Boleíta / Almacén Principal) y toma
+   los **precios** de aquí. El servidor revalida stock y precios al crear la cotización.
+   En modo simulado se sirve un catálogo DEMO de 12 productos.
 
 ## Qué necesitamos del cliente para activar el modo real
 
@@ -25,8 +32,12 @@ en `quotes.pp_sync_status` y `quotes.pp_external_ref`.
 2. **Credenciales** de un usuario SQL con permisos de lectura/escritura acotados a las
    tablas involucradas (no `sa`).
 3. **Esquema de las tablas** que hoy usa la app de cotizaciones para inyectar:
-   nombres de tablas de documentos de venta/cotizaciones, clientes y correlativo,
-   columnas obligatorias, triggers o procedimientos almacenados que haya que invocar.
+   nombres de tablas de documentos de venta/cotizaciones (encabezado y renglones),
+   clientes y correlativo, columnas obligatorias, triggers o procedimientos
+   almacenados que haya que invocar.
+3b. **Esquema de inventario**: tablas de artículos (código, descripción, precio de
+   venta) y de existencias por almacén, y cómo se mapean los almacenes de Profit
+   Plus a las sedes "Almacén Boleíta" y "Almacén Principal" de la intranet.
 4. **Reglas del correlativo**: quién asigna el número de documento en Profit Plus
    (¿la intranet propone y Profit Plus confirma, o al revés?).
 5. **Mapeo de vendedores** (usuario intranet ↔ código de vendedor en Profit Plus).

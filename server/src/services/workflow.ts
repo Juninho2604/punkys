@@ -1,7 +1,7 @@
 import { db } from '../db/knex.js'
 import { HttpError } from '../middleware/errors.js'
 import type { AuthUser } from '../middleware/auth.js'
-import { calcularDesglose, SERVICIOS, type ServicioId } from './pricing.js'
+import { IVA_RATE } from './pricing.js'
 import { nextNumber } from './counters.js'
 import { notifier } from '../notifications/index.js'
 import { templates, type QuoteInfo, type ShipmentInfo } from '../notifications/templates.js'
@@ -25,30 +25,65 @@ export interface NuevaCotizacion {
   origen: string
   destinoCiudad: string
   destinoDireccion: string
-  pesoKg: number
-  volumenM3: number
-  bultos: number
-  valorDeclarado: number
-  servicio: ServicioId
+  items: { codigo: string; cantidad: number }[]
 }
 
-function quoteInfo(q: any, vendedorNombre: string): QuoteInfo {
-  const servicio = SERVICIOS.find((s) => s.id === q.servicio)
+// Resumen legible de los renglones ("3 productos · 14 unidades")
+export function resumenItems(items: { cantidad: number }[]): string {
+  const unidades = items.reduce((s, i) => s + i.cantidad, 0)
+  return `${items.length} producto${items.length === 1 ? '' : 's'} · ${unidades} unidad${unidades === 1 ? '' : 'es'}`
+}
+
+async function itemsDe(quoteId: number) {
+  return db('quote_items').where({ quote_id: quoteId }).orderBy('id')
+}
+
+function quoteInfo(q: any, vendedorNombre: string, items: { cantidad: number }[]): QuoteInfo {
   return {
     numero: q.numero,
     razonSocial: q.razon_social,
     contacto: q.contacto,
     origen: q.origen,
     destinoCiudad: q.destino_ciudad,
-    servicioNombre: servicio?.nombre ?? q.servicio,
+    resumen: items.length > 0 ? resumenItems(items) : (q.servicio ?? '—'),
     total: Number(q.total),
     vendedor: vendedorNombre,
     motivoRechazo: q.motivo_rechazo,
   }
 }
 
+const r2 = (n: number) => Math.round(n * 100) / 100
+
 export async function crearCotizacion(datos: NuevaCotizacion, user: AuthUser) {
-  const desglose = calcularDesglose(datos.servicio, datos.pesoKg, datos.valorDeclarado)
+  if (datos.items.length === 0) throw new HttpError(400, 'La cotización necesita al menos un producto')
+
+  // Precios y stock SIEMPRE del inventario (Profit Plus / simulado), nunca del cliente
+  const codigos = [...new Set(datos.items.map((i) => i.codigo))]
+  const productos = await profitPlus.getProducts(codigos)
+  const porCodigo = new Map(productos.map((p) => [p.codigo, p]))
+
+  const renglones = datos.items.map((i) => {
+    const p = porCodigo.get(i.codigo)
+    if (!p) throw new HttpError(400, `Producto no encontrado en el inventario: ${i.codigo}`)
+    const disponible = p.stock[datos.origen] ?? 0
+    if (i.cantidad > disponible) {
+      throw new HttpError(
+        409,
+        `Stock insuficiente de "${p.nombre}" en ${datos.origen}: quedan ${disponible} y pediste ${i.cantidad}`,
+      )
+    }
+    return {
+      codigo: p.codigo,
+      nombre: p.nombre,
+      precio_unit: r2(p.precio),
+      cantidad: i.cantidad,
+      total: r2(p.precio * i.cantidad),
+    }
+  })
+
+  const subtotal = r2(renglones.reduce((s, r) => s + r.total, 0))
+  const iva = r2(subtotal * IVA_RATE)
+  const total = r2(subtotal + iva)
 
   return db.transaction(async (trx) => {
     // Mantener el catálogo de clientes al día (clave: RIF)
@@ -75,22 +110,16 @@ export async function crearCotizacion(datos: NuevaCotizacion, user: AuthUser) {
         origen: datos.origen,
         destino_ciudad: datos.destinoCiudad,
         destino_direccion: datos.destinoDireccion,
-        peso_kg: datos.pesoKg,
-        volumen_m3: datos.volumenM3,
-        bultos: datos.bultos,
-        valor_declarado: datos.valorDeclarado,
-        servicio: datos.servicio,
-        flete_base: desglose.fleteBase,
-        cargo_peso: desglose.cargoPeso,
-        seguro: desglose.seguro,
-        subtotal: desglose.subtotal,
-        iva: desglose.iva,
-        total: desglose.total,
+        subtotal,
+        iva,
+        total,
         estado: 'generada',
         created_by: user.id,
       })
       .returning('*')
-    return quote
+
+    await trx('quote_items').insert(renglones.map((r) => ({ ...r, quote_id: quote.id })))
+    return { ...quote, items: renglones }
   })
 }
 
@@ -98,6 +127,8 @@ export async function enviarAAprobacion(quoteId: number, user: AuthUser) {
   const quote = await db('quotes').where({ id: quoteId }).first()
   if (!quote) throw new HttpError(404, 'Cotización no encontrada')
   if (quote.estado !== 'generada') throw new HttpError(409, `La cotización ya está en estado "${quote.estado}"`)
+
+  const items = await itemsDe(quoteId)
 
   // Inyección en Profit Plus 2K12 (simulada hasta tener acceso al SQL Server)
   const pp = await profitPlus.pushQuote({
@@ -109,11 +140,13 @@ export async function enviarAAprobacion(quoteId: number, user: AuthUser) {
     origen: quote.origen,
     destinoCiudad: quote.destino_ciudad,
     destinoDireccion: quote.destino_direccion,
-    pesoKg: Number(quote.peso_kg),
-    volumenM3: Number(quote.volumen_m3),
-    bultos: quote.bultos,
-    valorDeclarado: Number(quote.valor_declarado),
-    servicio: quote.servicio,
+    items: items.map((i) => ({
+      codigo: i.codigo,
+      nombre: i.nombre,
+      cantidad: i.cantidad,
+      precioUnit: Number(i.precio_unit),
+      total: Number(i.total),
+    })),
     subtotal: Number(quote.subtotal),
     iva: Number(quote.iva),
     total: Number(quote.total),
@@ -131,7 +164,7 @@ export async function enviarAAprobacion(quoteId: number, user: AuthUser) {
     .returning('*')
 
   // Aviso automático al equipo de Cuentas por Cobrar
-  const info = quoteInfo(updated, user.nombre)
+  const info = quoteInfo(updated, user.nombre, items)
   const cxcUsers = await db('users').whereIn('rol', ['cxc']).andWhere('activo', true)
   const { subject, text } = templates.cotizacionPendiente(info)
   for (const u of cxcUsers) {
@@ -163,11 +196,12 @@ export async function decidirCotizacion(
 
   const vendedor = await db('users').where({ id: quote.created_by }).first()
   const client = quote.client_id ? await db('clients').where({ id: quote.client_id }).first() : null
-  const info = quoteInfo(updated, vendedor?.nombre ?? 'equipo de ventas')
+  const items = await itemsDe(quoteId)
+  const info = quoteInfo(updated, vendedor?.nombre ?? 'equipo de ventas', items)
 
   let shipment: any = null
   if (decision === 'aprobada') {
-    shipment = await crearEnvioDesdeCotizacion(updated, client)
+    shipment = await crearEnvioDesdeCotizacion(updated, client, items)
     // Cliente: email (si lo tenemos) + WhatsApp al teléfono de contacto
     if (client?.email) {
       const m = templates.cotizacionAprobadaCliente(info)
@@ -230,12 +264,13 @@ export async function devolverAPendiente(quoteId: number) {
   return updated
 }
 
-async function crearEnvioDesdeCotizacion(quote: any, client: any) {
+async function crearEnvioDesdeCotizacion(quote: any, client: any, items: { cantidad: number }[]) {
   return db.transaction(async (trx) => {
     const numero = await nextNumber(trx, 'shipment', 'ENV')
-    const carga = `${quote.bultos} bulto${quote.bultos === 1 ? '' : 's'} · ${Number(quote.peso_kg).toLocaleString('es-VE')} kg · ${Number(quote.volumen_m3).toLocaleString('es-VE')} m³`
-    const dias = quote.servicio === 'express' ? 1 : 3
-    const eta = new Date(Date.now() + dias * 24 * 60 * 60 * 1000).toLocaleDateString('es-VE', {
+    const carga = items.length > 0
+      ? resumenItems(items)
+      : `${quote.bultos ?? '—'} bultos · ${Number(quote.peso_kg ?? 0).toLocaleString('es-VE')} kg`
+    const eta = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toLocaleDateString('es-VE', {
       day: '2-digit',
       month: 'short',
     })

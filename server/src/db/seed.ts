@@ -1,7 +1,8 @@
 import bcrypt from 'bcryptjs'
 import { db } from './knex.js'
-import { MILESTONES, estadoFromDone } from '../services/workflow.js'
-import { calcularDesglose, type ServicioId } from '../services/pricing.js'
+import { MILESTONES, estadoFromDone, resumenItems } from '../services/workflow.js'
+import { IVA_RATE } from '../services/pricing.js'
+import { SimulatedProfitPlusConnector } from '../integrations/profitplus/simulated.js'
 
 // Seed de desarrollo/demo: limpia y repuebla la base de datos.
 // Usuarios (contraseña para todos: punky123):
@@ -52,39 +53,45 @@ async function main() {
     { nombre: 'shipment', valor: 2485 }, // próximo: ENV-2486
   ])
 
-  // ── Cotizaciones ───────────────────────────────────────────────────────────
+  // ── Cotizaciones (renglones del catálogo demo del conector simulado) ──────
+  const connector = new SimulatedProfitPlusConnector()
+  const r2 = (n: number) => Math.round(n * 100) / 100
+
   interface QSeed {
     numero: string
     clientIdx: number
     origen: string
     destinoCiudad: string
     destinoDireccion: string
-    pesoKg: number
-    volumenM3: number
-    bultos: number
-    valorDeclarado: number
-    servicio: ServicioId
+    items: { codigo: string; cantidad: number }[]
     estado: 'pendiente' | 'aprobada' | 'rechazada'
     creada: Date
     motivo?: string
   }
 
   const quotesSeed: QSeed[] = [
-    { numero: 'COT-0452', clientIdx: 0, origen: 'Almacén Boleíta', destinoCiudad: 'Maracay', destinoDireccion: 'Av. Bolívar Este, Galpón 12', pesoKg: 320, volumenM3: 2.4, bultos: 18, valorDeclarado: 45000, servicio: 'terrestre', estado: 'aprobada', creada: hace(9) },
-    { numero: 'COT-0453', clientIdx: 1, origen: 'Almacén Principal', destinoCiudad: 'Caracas', destinoDireccion: 'Av. San Juan Bosco, Altamira, Torre Clínica PB', pesoKg: 45, volumenM3: 0.6, bultos: 5, valorDeclarado: 18000, servicio: 'frio', estado: 'aprobada', creada: hace(7) },
-    { numero: 'COT-0454', clientIdx: 3, origen: 'Almacén Principal', destinoCiudad: 'Maracaibo', destinoDireccion: 'Zona Industrial Sur, Calle 149', pesoKg: 510, volumenM3: 4.1, bultos: 32, valorDeclarado: 82000, servicio: 'terrestre', estado: 'aprobada', creada: hace(6) },
-    { numero: 'COT-0455', clientIdx: 4, origen: 'Almacén Principal', destinoCiudad: 'Guacara', destinoDireccion: 'C.C. Guacara Plaza, Local 34', pesoKg: 120, volumenM3: 1.1, bultos: 9, valorDeclarado: 22000, servicio: 'express', estado: 'aprobada', creada: hace(4) },
-    { numero: 'COT-0450', clientIdx: 2, origen: 'Almacén Boleíta', destinoCiudad: 'Barcelona', destinoDireccion: 'Av. Intercomunal, C.C. Plaza Mayor, Nivel 2', pesoKg: 260, volumenM3: 2.0, bultos: 15, valorDeclarado: 38000, servicio: 'terrestre', estado: 'aprobada', creada: hace(12) },
-    { numero: 'COT-0456', clientIdx: 2, origen: 'Almacén Boleíta', destinoCiudad: 'Puerto La Cruz', destinoDireccion: 'Av. Municipal, Edif. Costa Azul, PB', pesoKg: 180, volumenM3: 1.5, bultos: 12, valorDeclarado: 30000, servicio: 'terrestre', estado: 'pendiente', creada: hace(2) },
-    { numero: 'COT-0457', clientIdx: 1, origen: 'Almacén Principal', destinoCiudad: 'Caracas', destinoDireccion: 'Av. San Juan Bosco, Altamira, Torre Clínica PB', pesoKg: 28, volumenM3: 0.4, bultos: 3, valorDeclarado: 12500, servicio: 'frio', estado: 'pendiente', creada: hace(1) },
-    { numero: 'COT-0458', clientIdx: 0, origen: 'Almacén Principal', destinoCiudad: 'Valencia', destinoDireccion: 'Zona Industrial Municipal Norte, Galpón 7', pesoKg: 95, volumenM3: 0.9, bultos: 7, valorDeclarado: 15800, servicio: 'especial', estado: 'pendiente', creada: hace(0, 5) },
-    { numero: 'COT-0451', clientIdx: 4, origen: 'Almacén Boleíta', destinoCiudad: 'San Cristóbal', destinoDireccion: 'Av. Libertador, Local 8', pesoKg: 400, volumenM3: 3.2, bultos: 25, valorDeclarado: 60000, servicio: 'terrestre', estado: 'rechazada', creada: hace(10), motivo: 'Cliente con facturas vencidas por conciliar' },
+    { numero: 'COT-0450', clientIdx: 2, origen: 'Almacén Boleíta', destinoCiudad: 'Barcelona', destinoDireccion: 'Av. Intercomunal, C.C. Plaza Mayor, Nivel 2', items: [{ codigo: 'ALI-001', cantidad: 10 }, { codigo: 'ARE-001', cantidad: 20 }], estado: 'aprobada', creada: hace(12) },
+    { numero: 'COT-0451', clientIdx: 4, origen: 'Almacén Boleíta', destinoCiudad: 'San Cristóbal', destinoDireccion: 'Av. Libertador, Local 8', items: [{ codigo: 'ALI-002', cantidad: 15 }, { codigo: 'JUG-001', cantidad: 40 }], estado: 'rechazada', creada: hace(10), motivo: 'Cliente con facturas vencidas por conciliar' },
+    { numero: 'COT-0452', clientIdx: 0, origen: 'Almacén Boleíta', destinoCiudad: 'Maracay', destinoDireccion: 'Av. Bolívar Este, Galpón 12', items: [{ codigo: 'ALI-001', cantidad: 12 }, { codigo: 'HIG-001', cantidad: 8 }], estado: 'aprobada', creada: hace(9) },
+    { numero: 'COT-0453', clientIdx: 1, origen: 'Almacén Principal', destinoCiudad: 'Caracas', destinoDireccion: 'Av. San Juan Bosco, Altamira, Torre Clínica PB', items: [{ codigo: 'HIG-001', cantidad: 10 }, { codigo: 'ALI-003', cantidad: 6 }], estado: 'aprobada', creada: hace(7) },
+    { numero: 'COT-0454', clientIdx: 3, origen: 'Almacén Principal', destinoCiudad: 'Maracaibo', destinoDireccion: 'Zona Industrial Sur, Calle 149', items: [{ codigo: 'ALI-001', cantidad: 25 }, { codigo: 'ALI-003', cantidad: 12 }, { codigo: 'ARE-001', cantidad: 30 }], estado: 'aprobada', creada: hace(6) },
+    { numero: 'COT-0455', clientIdx: 4, origen: 'Almacén Principal', destinoCiudad: 'Guacara', destinoDireccion: 'C.C. Guacara Plaza, Local 34', items: [{ codigo: 'ACC-003', cantidad: 4 }, { codigo: 'ACC-001', cantidad: 15 }], estado: 'aprobada', creada: hace(4) },
+    { numero: 'COT-0456', clientIdx: 2, origen: 'Almacén Boleíta', destinoCiudad: 'Puerto La Cruz', destinoDireccion: 'Av. Municipal, Edif. Costa Azul, PB', items: [{ codigo: 'ALI-002', cantidad: 10 }, { codigo: 'ACC-002', cantidad: 5 }], estado: 'pendiente', creada: hace(2) },
+    { numero: 'COT-0457', clientIdx: 1, origen: 'Almacén Principal', destinoCiudad: 'Caracas', destinoDireccion: 'Av. San Juan Bosco, Altamira, Torre Clínica PB', items: [{ codigo: 'ALI-004', cantidad: 8 }, { codigo: 'ACU-001', cantidad: 12 }], estado: 'pendiente', creada: hace(1) },
+    { numero: 'COT-0458', clientIdx: 0, origen: 'Almacén Principal', destinoCiudad: 'Valencia', destinoDireccion: 'Zona Industrial Municipal Norte, Galpón 7', items: [{ codigo: 'ALI-001', cantidad: 8 }, { codigo: 'ARE-001', cantidad: 15 }], estado: 'pendiente', creada: hace(0, 5) },
   ]
 
   const quoteIds: Record<string, number> = {}
+  const cargaDe: Record<string, string> = {}
   for (const q of quotesSeed) {
     const c = cliente(q.clientIdx)
-    const d = calcularDesglose(q.servicio, q.pesoKg, q.valorDeclarado)
+    const productos = await connector.getProducts(q.items.map((i) => i.codigo))
+    const renglones = q.items.map((i) => {
+      const p = productos.find((x) => x.codigo === i.codigo)!
+      return { codigo: p.codigo, nombre: p.nombre, precio_unit: p.precio, cantidad: i.cantidad, total: r2(p.precio * i.cantidad) }
+    })
+    const subtotal = r2(renglones.reduce((s, r) => s + r.total, 0))
+    const iva = r2(subtotal * IVA_RATE)
     const decidida = q.estado !== 'pendiente'
     const [row] = await db('quotes')
       .insert({
@@ -97,17 +104,9 @@ async function main() {
         origen: q.origen,
         destino_ciudad: q.destinoCiudad,
         destino_direccion: q.destinoDireccion,
-        peso_kg: q.pesoKg,
-        volumen_m3: q.volumenM3,
-        bultos: q.bultos,
-        valor_declarado: q.valorDeclarado,
-        servicio: q.servicio,
-        flete_base: d.fleteBase,
-        cargo_peso: d.cargoPeso,
-        seguro: d.seguro,
-        subtotal: d.subtotal,
-        iva: d.iva,
-        total: d.total,
+        subtotal,
+        iva,
+        total: r2(subtotal + iva),
         estado: q.estado,
         created_by: vendedor.id,
         decided_by: decidida ? cxc.id : null,
@@ -119,7 +118,9 @@ async function main() {
         updated_at: q.creada,
       })
       .returning('id')
+    await db('quote_items').insert(renglones.map((r) => ({ ...r, quote_id: row.id })))
     quoteIds[q.numero] = row.id
+    cargaDe[q.numero] = resumenItems(renglones)
   }
 
   // ── Envíos (5 registros demo) ─────────────────────────────────────────────
@@ -156,7 +157,7 @@ async function main() {
         destino_direccion: q.destinoDireccion,
         transportista: s.transportista,
         placa: s.placa,
-        carga: `${q.bultos} bultos · ${q.pesoKg.toLocaleString('es-VE')} kg · ${q.volumenM3.toLocaleString('es-VE')} m³`,
+        carga: cargaDe[s.quote],
         estado: estadoFromDone(s.done, Boolean(s.incidencia)),
         eta: s.eta,
         done: s.done,

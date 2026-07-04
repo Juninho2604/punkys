@@ -1,5 +1,5 @@
 import { config } from '../../config.js'
-import type { PPPushResult, PPQuotePayload, PPStatus, ProfitPlusConnector } from './types.js'
+import type { PPProduct, PPPushResult, PPQuotePayload, PPStatus, ProfitPlusConnector } from './types.js'
 
 // ⚠️ ESQUELETO — EN ESPERA DE ACCESO AL SQL SERVER DEL CLIENTE.
 //
@@ -29,6 +29,16 @@ export class SqlServerProfitPlusConnector implements ProfitPlusConnector {
       error:
         'Conector SQL Server aún no implementado: falta el esquema de tablas y el acceso a la BD de Profit Plus 2K12 (ver docs/integracion-profit-plus.md).',
     }
+  }
+
+  // Al implementar: leer artículos/existencias por almacén de las tablas de
+  // inventario de Profit Plus (según el esquema que entregue el cliente).
+  async searchProducts(_query: string): Promise<PPProduct[]> {
+    throw new Error('Inventario SQL Server pendiente del esquema del cliente')
+  }
+
+  async getProducts(_codigos: string[]): Promise<PPProduct[]> {
+    throw new Error('Inventario SQL Server pendiente del esquema del cliente')
   }
 
   async status(): Promise<PPStatus> {

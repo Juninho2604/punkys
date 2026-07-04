@@ -10,7 +10,7 @@ export interface QuoteInfo {
   contacto?: string | null
   origen: string
   destinoCiudad: string
-  servicioNombre: string
+  resumen: string // ej: "3 productos · 14 unidades"
   total: number
   vendedor: string
   motivoRechazo?: string | null
@@ -35,7 +35,7 @@ export const templates = {
       `Cotización: ${q.numero}`,
       `Cliente: ${q.razonSocial}`,
       `Ruta: ${q.origen} → ${q.destinoCiudad}`,
-      `Servicio: ${q.servicioNombre}`,
+      `Pedido: ${q.resumen}`,
       `Total: ${fmtBs(q.total)}`,
       `Vendedor: ${q.vendedor}`,
       ``,
@@ -52,7 +52,7 @@ export const templates = {
       `Hola${q.contacto ? ` ${q.contacto}` : ''},`,
       ``,
       `Buenas noticias: la cotización ${q.numero} de ${q.razonSocial} fue aprobada.`,
-      `Servicio: ${q.servicioNombre} · Ruta: ${q.origen} → ${q.destinoCiudad}`,
+      `Pedido: ${q.resumen} · Ruta: ${q.origen} → ${q.destinoCiudad}`,
       `Total: ${fmtBs(q.total)}`,
       ``,
       `Tu pedido pasó al área de despacho; te avisaremos en cada etapa del envío.`,
@@ -66,7 +66,7 @@ export const templates = {
     return [
       `✅ *Punky Partners*`,
       `Tu cotización *${q.numero}* fue aprobada.`,
-      `${q.servicioNombre} · ${q.origen} → ${q.destinoCiudad}`,
+      `${q.resumen} · ${q.origen} → ${q.destinoCiudad}`,
       `Total: *${fmtBs(q.total)}*`,
       `Te avisaremos cuando el envío esté en camino. 🐾`,
     ].join('\n')

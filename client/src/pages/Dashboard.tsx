@@ -113,7 +113,7 @@ export function Dashboard() {
                 <span className="cell-id">{q.numero}</span>
                 <span style={{ font: '800 13.5px var(--font-ui)', color: 'var(--ink-900)' }}>{fmtBs(q.total)}</span>
               </div>
-              <div className="cell-sub">{q.razon_social} · {SERVICIO_NOMBRE[q.servicio] ?? q.servicio}</div>
+              <div className="cell-sub">{q.razon_social} · {q.resumen ?? SERVICIO_NOMBRE[q.servicio ?? ''] ?? '—'}</div>
               {puedeDecidir && (
                 <div style={{ display: 'flex', gap: 8 }}>
                   <button className="btn-approve-soft" onClick={() => decidir(q.id, 'approve', q.numero)}>Aprobar</button>

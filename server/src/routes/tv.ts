@@ -1,15 +1,12 @@
 import { Router } from 'express'
 import { db } from '../db/knex.js'
 import { config } from '../config.js'
-import { SERVICIOS } from '../services/pricing.js'
 
 // Centro de Operaciones (modo TV): un solo endpoint agregado, de solo lectura,
 // protegido por clave estática (TV_ACCESS_KEY) porque el TV no puede loguearse.
 // El frontend lo consulta cada ~20s.
 
 export const tvRouter = Router()
-
-const nombreServicio = (id: string) => SERVICIOS.find((s) => s.id === id)?.nombre ?? id
 
 tvRouter.get('/board', async (req, res, next) => {
   try {
@@ -53,11 +50,24 @@ tvRouter.get('/board', async (req, res, next) => {
     const entregasATiempo = cerrados > 0 ? Math.round((Number(entregados) / cerrados) * 100) : 100
 
     // ── Esperando aprobación (las más antiguas primero) ─────────────────────
-    const pendientes = await db('quotes')
+    const pendientesRaw = await db('quotes')
       .where('estado', 'pendiente')
       .orderBy('created_at', 'asc')
       .limit(8)
-      .select('numero', 'razon_social', 'servicio', 'total', 'created_at')
+      .select('id', 'numero', 'razon_social', 'servicio', 'total', 'created_at')
+    const aggItems = pendientesRaw.length
+      ? await db('quote_items')
+          .whereIn('quote_id', pendientesRaw.map((p) => p.id))
+          .groupBy('quote_id')
+          .select('quote_id')
+          .count('* as productos')
+          .sum('cantidad as unidades')
+      : []
+    const aggMap = new Map(aggItems.map((a: any) => [a.quote_id, a]))
+    const pendientes = pendientesRaw.map((p) => {
+      const a = aggMap.get(p.id) as any
+      return { ...p, resumen: a ? `${a.productos} prod · ${a.unidades} und` : (p.servicio ?? '—') }
+    })
 
     // ── Despachos activos (incidencias primero) ─────────────────────────────
     const envios = await db('shipments')
@@ -77,7 +87,7 @@ tvRouter.get('/board', async (req, res, next) => {
     const ultQuotes = await db('quotes')
       .orderBy('updated_at', 'desc')
       .limit(15)
-      .select('numero', 'razon_social', 'total', 'estado', 'servicio', 'created_at', 'decided_at')
+      .select('numero', 'razon_social', 'total', 'estado', 'created_at', 'decided_at')
     const ultShipments = await db('shipments')
       .orderBy('updated_at', 'desc')
       .limit(15)
@@ -86,7 +96,7 @@ tvRouter.get('/board', async (req, res, next) => {
     type Evento = { t: string; texto: string }
     const eventos: Evento[] = []
     for (const q of ultQuotes) {
-      eventos.push({ t: q.created_at, texto: `📝 ${q.numero} · ${q.razon_social} · ${nombreServicio(q.servicio)}` })
+      eventos.push({ t: q.created_at, texto: `📝 ${q.numero} · ${q.razon_social}` })
       if (q.decided_at) {
         const emoji = q.estado === 'aprobada' ? '✅' : '⛔'
         eventos.push({ t: q.decided_at, texto: `${emoji} ${q.numero} ${q.estado} · ${q.razon_social}` })

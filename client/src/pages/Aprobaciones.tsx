@@ -73,7 +73,7 @@ export function Aprobaciones() {
                     <div style={{ font: '800 14.5px var(--font-ui)', color: 'var(--ink-900)' }}>{q.razon_social}</div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <span style={{ background: 'var(--sky-50)', color: 'var(--brand-800)', font: '700 11.5px var(--font-ui)', padding: '3px 9px', borderRadius: 999 }}>
-                        {SERVICIO_NOMBRE[q.servicio] ?? q.servicio}
+                        {q.resumen ?? SERVICIO_NOMBRE[q.servicio ?? ''] ?? '—'}
                       </span>
                       <span style={{ font: '800 14px var(--font-ui)', color: 'var(--brand-900)' }}>{fmtBs(q.total)}</span>
                     </div>

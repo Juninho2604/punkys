@@ -1,12 +1,14 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { Search, Plus, Minus, X } from 'lucide-react'
 import { api } from '../lib/api'
 import { fmtBs } from '../lib/format'
 import { useAuth } from '../lib/auth'
 import { useToast } from '../lib/toast'
 import { usePend } from '../components/Shell'
-import type { Quote, Servicio } from '../lib/types'
+import type { Producto, Quote } from '../lib/types'
 
+// Nombres de los servicios del modelo viejo (solo para mostrar cotizaciones históricas)
 export const SERVICIO_NOMBRE: Record<string, string> = {
   terrestre: 'Terrestre Estándar',
   express: 'Express 24h',
@@ -14,12 +16,11 @@ export const SERVICIO_NOMBRE: Record<string, string> = {
   especial: 'Manejo Especial',
 }
 
-const PASOS = ['Cliente', 'Origen y destino', 'Carga y servicio', 'Precios y resumen']
-// Sedes de origen de los despachos
+const PASOS = ['Cliente', 'Origen y destino', 'Productos', 'Resumen']
 const ORIGENES = ['Almacén Boleíta', 'Almacén Principal']
-// Destino por defecto; solo se pide la ciudad si el envío va fuera de Caracas
 const CIUDAD_DEFAULT = 'Caracas'
 const RIF_RE = /^[VEJPG]-?\d{7,9}-?\d$/i
+const IVA_RATE = 0.16
 
 interface Form {
   razonSocial: string
@@ -30,20 +31,20 @@ interface Form {
   otraCiudad: boolean
   destinoCiudad: string
   destinoDireccion: string
-  peso: string
-  volumen: string
-  bultos: string
-  valor: string
-  servicio: Servicio['id'] | null
 }
 
 const FORM_INICIAL: Form = {
   razonSocial: '', rif: '', telefono: '', contacto: '',
   origen: ORIGENES[0], otraCiudad: false, destinoCiudad: '', destinoDireccion: '',
-  peso: '', volumen: '', bultos: '', valor: '', servicio: null,
 }
 
-const num = (s: string) => Number(s.replace(',', '.')) || 0
+interface Renglon {
+  codigo: string
+  nombre: string
+  precio: number
+  cantidad: number
+  stock: number // disponible en la sede de origen al momento de agregar
+}
 
 export function Cotizacion() {
   const { user } = useAuth()
@@ -52,35 +53,91 @@ export function Cotizacion() {
   const { refreshPend } = usePend()
   const [paso, setPaso] = useState(0)
   const [form, setForm] = useState<Form>(FORM_INICIAL)
+  const [items, setItems] = useState<Renglon[]>([])
   const [errores, setErrores] = useState<Record<string, string>>({})
-  const [servicios, setServicios] = useState<Servicio[]>([])
-  const [rates, setRates] = useState({ ivaRate: 0.16, seguroRate: 0.02 })
   const [generada, setGenerada] = useState<Quote | null>(null)
   const [ocupado, setOcupado] = useState(false)
 
+  // Buscador de inventario
+  const [busqueda, setBusqueda] = useState('')
+  const [resultados, setResultados] = useState<Producto[]>([])
+  const [buscando, setBuscando] = useState(false)
+  const debounce = useRef<ReturnType<typeof setTimeout>>()
+
   useEffect(() => {
-    api.get<{ servicios: Servicio[]; ivaRate: number; seguroRate: number }>('/quotes/services').then((r) => {
-      setServicios(r.servicios)
-      setRates({ ivaRate: r.ivaRate, seguroRate: r.seguroRate })
-    })
-  }, [])
+    if (paso !== 2) return
+    setBuscando(true)
+    clearTimeout(debounce.current)
+    debounce.current = setTimeout(() => {
+      api
+        .get<{ productos: Producto[] }>(`/inventario/search?q=${encodeURIComponent(busqueda)}`)
+        .then((r) => setResultados(r.productos))
+        .catch(() => setResultados([]))
+        .finally(() => setBuscando(false))
+    }, 300)
+    return () => clearTimeout(debounce.current)
+  }, [busqueda, paso])
+
+  // El stock depende de la sede: si cambia el origen, la lista se invalida
+  const origenPrevio = useRef(form.origen)
+  useEffect(() => {
+    if (form.origen !== origenPrevio.current) {
+      origenPrevio.current = form.origen
+      if (items.length > 0) {
+        setItems([])
+        toast('Cambiaste la sede de origen: la lista de productos se vació (el stock es por sede)')
+      }
+    }
+  }, [form.origen, items.length, toast])
 
   const set = (k: keyof Form) => (v: string) => {
     setForm((f) => ({ ...f, [k]: v }))
     setErrores((e) => ({ ...e, [k]: '' }))
   }
 
-  // Desglose en vivo (el servidor recalcula al generar)
-  const desglose = useMemo(() => {
-    const sv = servicios.find((s) => s.id === form.servicio)
-    if (!sv) return null
-    const fleteBase = sv.base
-    const cargoPeso = num(form.peso) * sv.porKg
-    const seguro = num(form.valor) * rates.seguroRate
-    const subtotal = fleteBase + cargoPeso + seguro
-    const iva = subtotal * rates.ivaRate
-    return { sv, fleteBase, cargoPeso, seguro, subtotal, iva, total: subtotal + iva }
-  }, [form.servicio, form.peso, form.valor, servicios, rates])
+  const totales = useMemo(() => {
+    const subtotal = items.reduce((s, i) => s + i.precio * i.cantidad, 0)
+    const iva = subtotal * IVA_RATE
+    return { subtotal, iva, total: subtotal + iva }
+  }, [items])
+
+  const unidades = items.reduce((s, i) => s + i.cantidad, 0)
+
+  function stockDe(p: Producto): number {
+    return p.stock[form.origen] ?? 0
+  }
+
+  function agregar(p: Producto) {
+    const disponible = stockDe(p)
+    setItems((prev) => {
+      const ya = prev.find((i) => i.codigo === p.codigo)
+      if (ya) {
+        if (ya.cantidad >= disponible) {
+          toast(`Solo quedan ${disponible} de "${p.nombre}" en ${form.origen}`)
+          return prev
+        }
+        return prev.map((i) => (i.codigo === p.codigo ? { ...i, cantidad: i.cantidad + 1 } : i))
+      }
+      return [...prev, { codigo: p.codigo, nombre: p.nombre, precio: p.precio, cantidad: 1, stock: disponible }]
+    })
+    setErrores((e) => ({ ...e, items: '' }))
+  }
+
+  function cambiarCantidad(codigo: string, delta: number) {
+    setItems((prev) =>
+      prev
+        .map((i) => {
+          if (i.codigo !== codigo) return i
+          const cantidad = i.cantidad + delta
+          if (cantidad > i.stock) {
+            toast(`Solo quedan ${i.stock} en ${form.origen}`)
+            return i
+          }
+          return { ...i, cantidad }
+        })
+        .filter((i) => i.cantidad > 0),
+    )
+  }
 
   function validar(p: number): boolean {
     const e: Record<string, string> = {}
@@ -93,8 +150,7 @@ export function Cotizacion() {
       if (form.destinoDireccion.trim().length < 5) e.destinoDireccion = 'Indica la dirección de entrega'
     }
     if (p === 2) {
-      if (num(form.peso) <= 0) e.peso = 'El peso debe ser mayor que 0'
-      if (!form.servicio) e.servicio = 'Selecciona un tipo de servicio'
+      if (items.length === 0) e.items = 'Agrega al menos un producto del inventario'
     }
     setErrores(e)
     return Object.keys(e).length === 0
@@ -112,11 +168,7 @@ export function Cotizacion() {
         origen: form.origen,
         destinoCiudad: form.otraCiudad ? form.destinoCiudad.trim() : CIUDAD_DEFAULT,
         destinoDireccion: form.destinoDireccion.trim(),
-        pesoKg: num(form.peso),
-        volumenM3: num(form.volumen),
-        bultos: Math.max(1, Math.round(num(form.bultos))),
-        valorDeclarado: num(form.valor),
-        servicio: form.servicio,
+        items: items.map((i) => ({ codigo: i.codigo, cantidad: i.cantidad })),
       })
       setGenerada(r.quote)
     } catch (err) {
@@ -142,12 +194,14 @@ export function Cotizacion() {
 
   function reset() {
     setForm(FORM_INICIAL)
+    setItems([])
     setPaso(0)
     setGenerada(null)
     setErrores({})
+    setBusqueda('')
   }
 
-  const input = (k: keyof Form, label: string, props: { placeholder?: string; full?: boolean; type?: string } = {}) => (
+  const input = (k: keyof Form, label: string, props: { placeholder?: string; full?: boolean } = {}) => (
     <div className={`field${props.full ? ' full' : ''}`}>
       <label className="field-label">{label}</label>
       <input
@@ -257,64 +311,119 @@ export function Cotizacion() {
 
         {paso === 2 && (
           <>
-            <h2 className="h2">Carga y servicio</h2>
-            <p className="subtitle" style={{ margin: '0 0 22px' }}>Describe la mercancía y elige el tipo de servicio.</p>
-            <div className="form-grid-4">
-              {input('peso', 'Peso (kg)', { placeholder: '240' })}
-              {input('volumen', 'Volumen (m³)', { placeholder: '1.8' })}
-              {input('bultos', 'Bultos', { placeholder: '18' })}
-              {input('valor', 'Valor declarado (Bs.)', { placeholder: '85.000' })}
+            <h2 className="h2">Productos</h2>
+            <p className="subtitle" style={{ margin: '0 0 16px' }}>
+              Busca en el inventario y agrega renglones. Stock mostrado: <b>{form.origen}</b>.
+            </p>
+
+            <div className="inv-search" style={{ marginBottom: 14 }}>
+              <Search size={15} strokeWidth={2.4} color="var(--ink-300)" />
+              <input
+                placeholder="Buscar producto por nombre o código…"
+                value={busqueda}
+                onChange={(e) => setBusqueda(e.target.value)}
+              />
             </div>
-            <label className="field-label">Tipo de servicio</label>
-            <div className="service-grid">
-              {servicios.map((sv) => (
-                <div
-                  key={sv.id}
-                  className={`service-card${form.servicio === sv.id ? ' selected' : ''}`}
-                  onClick={() => { setForm((f) => ({ ...f, servicio: sv.id })); setErrores((e) => ({ ...e, servicio: '' })) }}
-                >
-                  <div className="service-dot" />
-                  <div style={{ flex: 1 }}>
-                    <div style={{ font: '800 14px var(--font-ui)', color: 'var(--ink-900)' }}>{sv.nombre}</div>
-                    <div style={{ font: '600 12.5px var(--font-ui)', color: 'var(--ink-500)' }}>{sv.detalle}</div>
-                  </div>
-                  <div style={{ font: '800 13px var(--font-ui)', color: 'var(--brand-800)', whiteSpace: 'nowrap' }}>
-                    Bs. {sv.base.toLocaleString('es-VE')} + Bs. {sv.porKg}/kg
+
+            <div className="inv-resultados">
+              {buscando && <div className="cell-sub" style={{ padding: 10 }}>Buscando…</div>}
+              {!buscando && resultados.length === 0 && (
+                <div className="cell-sub" style={{ padding: 10 }}>Sin resultados para “{busqueda}”.</div>
+              )}
+              {!buscando &&
+                resultados.map((p) => {
+                  const disp = stockDe(p)
+                  const enLista = items.find((i) => i.codigo === p.codigo)
+                  const agotado = disp === 0
+                  const alTope = enLista ? enLista.cantidad >= disp : false
+                  return (
+                    <div key={p.codigo} className={`inv-item${agotado ? ' agotado' : ''}`}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ font: '800 13.5px var(--font-ui)', color: 'var(--ink-900)' }}>{p.nombre}</div>
+                        <div className="caption">{p.codigo} · {fmtBs(p.precio)}</div>
+                      </div>
+                      <span className={`inv-stock ${agotado ? 'rojo' : disp <= 10 ? 'ambar' : 'verde'}`}>
+                        {agotado ? 'Sin stock' : `${disp} disp.`}
+                      </span>
+                      <button
+                        className="btn btn-primary inv-add"
+                        disabled={agotado || alTope}
+                        onClick={() => agregar(p)}
+                        title={agotado ? `Sin existencia en ${form.origen}` : 'Agregar'}
+                      >
+                        <Plus size={16} strokeWidth={2.6} />
+                      </button>
+                    </div>
+                  )
+                })}
+            </div>
+
+            {errores.items && <div className="field-error" style={{ marginTop: 10 }}>{errores.items}</div>}
+
+            {items.length > 0 && (
+              <div style={{ marginTop: 18 }}>
+                <label className="field-label">Renglones de la cotización</label>
+                <div className="inv-carrito">
+                  {items.map((i) => (
+                    <div key={i.codigo} className="inv-renglon">
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ font: '800 13.5px var(--font-ui)', color: 'var(--ink-900)' }}>{i.nombre}</div>
+                        <div className="caption">{fmtBs(i.precio)} c/u · quedan {i.stock}</div>
+                      </div>
+                      <div className="inv-qty">
+                        <button onClick={() => cambiarCantidad(i.codigo, -1)}><Minus size={14} strokeWidth={2.6} /></button>
+                        <span>{i.cantidad}</span>
+                        <button onClick={() => cambiarCantidad(i.codigo, +1)} disabled={i.cantidad >= i.stock}><Plus size={14} strokeWidth={2.6} /></button>
+                      </div>
+                      <div style={{ font: '800 13.5px var(--font-ui)', color: 'var(--ink-900)', width: 110, textAlign: 'right' }}>
+                        {fmtBs(i.precio * i.cantidad)}
+                      </div>
+                      <button className="inv-quitar" title="Quitar" onClick={() => setItems((prev) => prev.filter((x) => x.codigo !== i.codigo))}>
+                        <X size={15} strokeWidth={2.6} />
+                      </button>
+                    </div>
+                  ))}
+                  <div className="inv-total-linea">
+                    <span>{items.length} producto{items.length === 1 ? '' : 's'} · {unidades} unidad{unidades === 1 ? '' : 'es'}</span>
+                    <span>Subtotal: <b>{fmtBs(totales.subtotal)}</b></span>
                   </div>
                 </div>
-              ))}
-            </div>
-            {errores.servicio && <div className="field-error" style={{ marginTop: 8 }}>{errores.servicio}</div>}
+              </div>
+            )}
           </>
         )}
 
-        {paso === 3 && desglose && (
+        {paso === 3 && (
           <>
-            <h2 className="h2">Precios y resumen</h2>
-            <p className="subtitle" style={{ margin: '0 0 22px' }}>Revisa el desglose antes de generar la cotización.</p>
+            <h2 className="h2">Resumen</h2>
+            <p className="subtitle" style={{ margin: '0 0 22px' }}>Revisa los renglones antes de generar la cotización.</p>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 20 }}>
               <span className="chip">{form.razonSocial} · {form.rif.toUpperCase()}</span>
               <span className="chip">{form.origen} → {form.otraCiudad ? form.destinoCiudad : CIUDAD_DEFAULT}</span>
-              <span className="chip">{num(form.peso).toLocaleString('es-VE')} kg · {Math.max(1, Math.round(num(form.bultos)))} bultos</span>
-              <span className="chip">{desglose.sv.nombre}</span>
+              <span className="chip">{items.length} producto{items.length === 1 ? '' : 's'} · {unidades} und</span>
             </div>
             <div className="pricing-table">
-              <div className="pricing-head"><span>Concepto</span><span>Detalle</span><span style={{ textAlign: 'right' }}>Monto</span></div>
-              {[
-                { c: 'Flete base', d: desglose.sv.nombre, m: desglose.fleteBase },
-                { c: 'Cargo por peso', d: `${num(form.peso).toLocaleString('es-VE')} kg × Bs. ${desglose.sv.porKg}/kg`, m: desglose.cargoPeso },
-                { c: 'Seguro de mercancía', d: `2% del valor declarado (${fmtBs(num(form.valor))})`, m: desglose.seguro },
-                { c: 'IVA', d: '16% sobre subtotal', m: desglose.iva },
-              ].map((r) => (
-                <div key={r.c} className="pricing-row">
-                  <span style={{ font: '700 13.5px var(--font-ui)', color: 'var(--ink-900)' }}>{r.c}</span>
-                  <span className="cell-sub">{r.d}</span>
-                  <span style={{ font: '700 13.5px var(--font-ui)', color: 'var(--ink-900)', textAlign: 'right' }}>{fmtBs(r.m)}</span>
+              <div className="pricing-head"><span>Producto</span><span>Cantidad × precio</span><span style={{ textAlign: 'right' }}>Monto</span></div>
+              {items.map((i) => (
+                <div key={i.codigo} className="pricing-row">
+                  <span style={{ font: '700 13.5px var(--font-ui)', color: 'var(--ink-900)' }}>{i.nombre}</span>
+                  <span className="cell-sub">{i.cantidad} × {fmtBs(i.precio)}</span>
+                  <span style={{ font: '700 13.5px var(--font-ui)', color: 'var(--ink-900)', textAlign: 'right' }}>{fmtBs(i.precio * i.cantidad)}</span>
                 </div>
               ))}
+              <div className="pricing-row">
+                <span style={{ font: '700 13.5px var(--font-ui)', color: 'var(--ink-900)' }}>Subtotal</span>
+                <span />
+                <span style={{ font: '700 13.5px var(--font-ui)', color: 'var(--ink-900)', textAlign: 'right' }}>{fmtBs(totales.subtotal)}</span>
+              </div>
+              <div className="pricing-row">
+                <span style={{ font: '700 13.5px var(--font-ui)', color: 'var(--ink-900)' }}>IVA</span>
+                <span className="cell-sub">16% sobre subtotal</span>
+                <span style={{ font: '700 13.5px var(--font-ui)', color: 'var(--ink-900)', textAlign: 'right' }}>{fmtBs(totales.iva)}</span>
+              </div>
               <div className="pricing-total">
                 <span style={{ font: '700 15px var(--font-display)', color: '#fff' }}>Total cotización</span>
-                <span style={{ font: '700 20px var(--font-display)', color: '#fff', textAlign: 'right' }}>{fmtBs(desglose.total)}</span>
+                <span style={{ font: '700 20px var(--font-display)', color: '#fff', textAlign: 'right' }}>{fmtBs(totales.total)}</span>
               </div>
             </div>
           </>
