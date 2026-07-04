@@ -3,10 +3,19 @@
 # Uso:      docker compose up -d --build
 # Variables:  se leen del archivo .env (copiar de .env.production.example)
 
+# Rotación de logs: sin esto Docker acumula logs sin límite y satura el disco.
+# Máximo por contenedor: 3 archivos de 10 MB (30 MB c/u, 90 MB el stack).
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
 services:
   db:
     image: postgres:16-alpine
     restart: unless-stopped
+    logging: *default-logging
     environment:
       POSTGRES_USER: punky
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?define POSTGRES_PASSWORD en .env}
@@ -23,6 +32,7 @@ services:
   server:
     build: ./server
     restart: unless-stopped
+    logging: *default-logging
     depends_on:
       db:
         condition: service_healthy
@@ -60,6 +70,7 @@ services:
   web:
     build: ./client
     restart: unless-stopped
+    logging: *default-logging
     depends_on:
       - server
     ports:
