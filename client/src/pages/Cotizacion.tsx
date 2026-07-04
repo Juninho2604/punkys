@@ -159,7 +159,7 @@ export function Cotizacion() {
   if (generada) {
     return (
       <div className="fade-up" style={{ maxWidth: 860, margin: '0 auto' }}>
-        <div className="card" style={{ borderRadius: 16, padding: '48px 40px', textAlign: 'center' }}>
+        <div className="card success-card" style={{ borderRadius: 16, padding: '48px 40px', textAlign: 'center' }}>
           <div style={{ width: 72, height: 72, borderRadius: '50%', background: 'var(--success-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 18px' }}>
             <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="var(--success-600)" strokeWidth="2.6"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
           </div>
@@ -188,7 +188,7 @@ export function Cotizacion() {
             <div key={label} style={{ display: 'flex', alignItems: 'center', flex: i < PASOS.length - 1 ? 1 : 'none' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 'none' }}>
                 <div className={`step-circle ${done ? 'done' : active ? 'active' : 'future'}`}>{done ? '✓' : i + 1}</div>
-                <span style={{ font: '800 13px var(--font-ui)', color: active || done ? 'var(--ink-900)' : 'var(--ink-500)', whiteSpace: 'nowrap' }}>{label}</span>
+                <span className="step-label" style={{ font: '800 13px var(--font-ui)', color: active || done ? 'var(--ink-900)' : 'var(--ink-500)', whiteSpace: 'nowrap' }}>{label}</span>
               </div>
               {i < PASOS.length - 1 && <div className={`step-line${done ? ' done' : ''}`} />}
             </div>
@@ -196,12 +196,12 @@ export function Cotizacion() {
         })}
       </div>
 
-      <div className="card" style={{ padding: 28 }}>
+      <div className="card card-pad-lg" style={{ padding: 28 }}>
         {paso === 0 && (
           <>
             <h2 className="h2">Datos del cliente</h2>
             <p className="subtitle" style={{ margin: '0 0 22px' }}>Identifica a quién va dirigida la cotización.</p>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+            <div className="form-grid-2">
               {input('razonSocial', 'Razón social', { placeholder: 'Ej: Farmatodo C.A.', full: true })}
               {input('rif', 'RIF', { placeholder: 'J-00000000-0' })}
               {input('telefono', 'Teléfono', { placeholder: '+58 412 000 0000' })}
@@ -214,7 +214,7 @@ export function Cotizacion() {
           <>
             <h2 className="h2">Origen y destino</h2>
             <p className="subtitle" style={{ margin: '0 0 22px' }}>Define la ruta del envío.</p>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+            <div className="form-grid-2">
               <div className="field">
                 <label className="field-label">Origen</label>
                 <select className="input-text" value={form.origen} onChange={(e) => set('origen')(e.target.value)}>
@@ -231,14 +231,14 @@ export function Cotizacion() {
           <>
             <h2 className="h2">Carga y servicio</h2>
             <p className="subtitle" style={{ margin: '0 0 22px' }}>Describe la mercancía y elige el tipo de servicio.</p>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 16, marginBottom: 22 }}>
+            <div className="form-grid-4">
               {input('peso', 'Peso (kg)', { placeholder: '240' })}
               {input('volumen', 'Volumen (m³)', { placeholder: '1.8' })}
               {input('bultos', 'Bultos', { placeholder: '18' })}
               {input('valor', 'Valor declarado (Bs.)', { placeholder: '85.000' })}
             </div>
             <label className="field-label">Tipo de servicio</label>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 8 }}>
+            <div className="service-grid">
               {servicios.map((sv) => (
                 <div
                   key={sv.id}

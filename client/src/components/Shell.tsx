@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useState } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { Bell, CheckCircle, FileText, LayoutGrid, LogOut, Palette, ChevronLeft, Search, Truck } from 'lucide-react'
+import { Bell, CheckCircle, FileText, LayoutGrid, LogOut, Menu, Palette, ChevronLeft, Search, Truck } from 'lucide-react'
 import { ROL_LABEL, useAuth } from '../lib/auth'
 import { api } from '../lib/api'
 import { iniciales } from '../lib/format'
@@ -36,6 +36,7 @@ const TITULOS: Record<string, string> = {
 export function Shell() {
   const { user, logout } = useAuth()
   const [collapsed, setCollapsed] = useState(false)
+  const [mobileOpen, setMobileOpen] = useState(false)
   const [pendCount, setPendCount] = useState(0)
   const location = useLocation()
   const navigate = useNavigate()
@@ -49,6 +50,9 @@ export function Shell() {
 
   useEffect(refreshPend, [refreshPend, location.pathname])
 
+  // Al navegar, cierra el drawer móvil
+  useEffect(() => setMobileOpen(false), [location.pathname])
+
   if (!user) return null
   const items = NAV.filter((n) => n.roles.includes(user.rol))
   const seccion = '/' + (location.pathname.split('/')[1] ?? '')
@@ -57,7 +61,8 @@ export function Shell() {
   return (
     <PendCtx.Provider value={{ pendCount, refreshPend }}>
       <div className="shell">
-        <aside className={`sidebar${collapsed ? ' collapsed' : ''}`}>
+        {mobileOpen && <div className="sidebar-backdrop" onClick={() => setMobileOpen(false)} />}
+        <aside className={`sidebar${collapsed ? ' collapsed' : ''}${mobileOpen ? ' mobile-open' : ''}`}>
           <div className="sidebar-brand">
             {collapsed ? (
               <img src="/logo-circulo.png" alt="Punky Partners" style={{ width: 40, height: 40, borderRadius: '50%' }} />
@@ -97,6 +102,9 @@ export function Shell() {
 
         <div className="main-col">
           <header className="header-admin">
+            <button className="menu-btn" title="Menú" onClick={() => setMobileOpen(true)}>
+              <Menu size={19} strokeWidth={2.2} color="var(--ink-900)" />
+            </button>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div className="header-breadcrumb">Inicio / {titulo}</div>
               <div className="header-title">{titulo}</div>
@@ -116,7 +124,7 @@ export function Shell() {
             </button>
             <div className="header-profile">
               <div className="header-avatar">{iniciales(user.nombre)}</div>
-              <div>
+              <div className="profile-text">
                 <div style={{ font: "800 13.5px var(--font-ui)", color: 'var(--ink-900)', lineHeight: 1.2 }}>{user.nombre}</div>
                 <div style={{ font: "700 11px var(--font-ui)", color: 'var(--ink-500)' }}>{ROL_LABEL[user.rol]}</div>
               </div>

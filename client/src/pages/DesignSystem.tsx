@@ -66,7 +66,7 @@ export function DesignSystem() {
 
       <div className="card" style={{ padding: 24 }}>
         <h2 style={{ font: '700 18px var(--font-display)', color: 'var(--brand-900)', margin: '0 0 16px' }}>01 · Paleta cromática</h2>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 12 }}>
+        <div className="palette-grid">
           {PALETA.map((p) => (
             <div key={p.token} style={{ border: '1px solid var(--line-soft)', borderRadius: 12, overflow: 'hidden' }}>
               <div style={{ height: 56, background: p.hex }} />
@@ -86,15 +86,15 @@ export function DesignSystem() {
           Display: <b>Baloo 2</b> (títulos, redondeada = ADN de marca) · Texto: <b>Nunito Sans</b> (UI y cuerpo).
         </p>
         {TIPOS.map((t) => (
-          <div key={t.token} style={{ display: 'grid', gridTemplateColumns: '110px 1fr 240px', gap: 16, alignItems: 'baseline', padding: '12px 0', borderTop: '1px solid var(--line-soft)' }}>
+          <div key={t.token} className="tipo-row">
             <span style={{ font: '800 11.5px var(--font-ui)', letterSpacing: 0.5, textTransform: 'uppercase', color: 'var(--ink-300)' }}>{t.token}</span>
             <span style={{ font: t.css, color: 'var(--ink-900)' }}>{t.sample}</span>
-            <span style={{ font: '700 12px ui-monospace,monospace', color: 'var(--ink-500)' }}>{t.spec}</span>
+            <span className="tipo-spec" style={{ font: '700 12px ui-monospace,monospace', color: 'var(--ink-500)' }}>{t.spec}</span>
           </div>
         ))}
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 22 }}>
+      <div className="ds-2col">
         <div className="card" style={{ padding: 24 }}>
           <h2 style={{ font: '700 18px var(--font-display)', color: 'var(--brand-900)', margin: '0 0 16px' }}>03 · Espaciado (escala 4px)</h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>

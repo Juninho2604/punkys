@@ -46,7 +46,7 @@ export function Dashboard() {
         <p className="subtitle">Resumen operativo · {hoyLargo()}</p>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 16 }}>
+      <div className="kpi-grid">
         <div className="card card-kpi">
           <div className="field-label">Envíos activos</div>
           <div className="kpi-value">{kpis.enviosActivos}</div>
@@ -73,23 +73,27 @@ export function Dashboard() {
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1.7fr 1fr', gap: 16, alignItems: 'start' }}>
+      <div className="dash-grid">
         <div className="card" style={{ overflow: 'hidden' }}>
           <div className="card-header">
             <div className="h3-card">Envíos recientes</div>
             <Link to="/despacho" className="link">Ver todos →</Link>
           </div>
-          <div className="table-head" style={{ gridTemplateColumns: '1fr 1.4fr 1.3fr 1fr' }}>
-            <span>Envío</span><span>Cliente</span><span>Ruta</span><span>Estado</span>
-          </div>
-          {data.recientes.map((s) => (
-            <div key={s.id} className="table-row" style={{ gridTemplateColumns: '1fr 1.4fr 1.3fr 1fr' }} onClick={() => navigate(`/despacho/${s.id}`)}>
-              <span className="cell-id">{s.numero}</span>
-              <span className="cell-main">{s.cliente}</span>
-              <span className="cell-sub">{s.origen.split('—')[0].trim()} → {s.destino_ciudad}</span>
-              <span><Badge estado={s.estado} /></span>
+          <div className="table-scroll">
+            <div className="table-min-560">
+              <div className="table-head cols-envios">
+                <span>Envío</span><span>Cliente</span><span>Ruta</span><span>Estado</span>
+              </div>
+              {data.recientes.map((s) => (
+                <div key={s.id} className="table-row cols-envios" onClick={() => navigate(`/despacho/${s.id}`)}>
+                  <span className="cell-id">{s.numero}</span>
+                  <span className="cell-main">{s.cliente}</span>
+                  <span className="cell-sub">{s.origen.split('—')[0].trim()} → {s.destino_ciudad}</span>
+                  <span><Badge estado={s.estado} /></span>
+                </div>
+              ))}
             </div>
-          ))}
+          </div>
         </div>
 
         <div className="card" style={{ overflow: 'hidden' }}>

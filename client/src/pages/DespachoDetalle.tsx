@@ -93,7 +93,7 @@ export function DespachoDetalle() {
         )}
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1.15fr 1.85fr', gap: 16, alignItems: 'start' }}>
+      <div className="detail-grid">
         {/* timeline-shipment */}
         <div className="card" style={{ padding: '22px 24px' }}>
           <div className="h3-card" style={{ marginBottom: 18 }}>Cronología del envío</div>
@@ -125,7 +125,7 @@ export function DespachoDetalle() {
                 </button>
               )}
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px 20px' }}>
+            <div className="detail-datos">
               <Dato label="Cliente" valor={shipment.cliente} />
               {editando ? (
                 <div className="field">
@@ -147,7 +147,7 @@ export function DespachoDetalle() {
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, alignItems: 'stretch' }}>
+          <div className="docs-map-grid">
             <div style={{ background: '#fff', border: '2px dashed var(--sky-200)', borderRadius: 14, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, padding: 28, minHeight: 150 }}>
               <Map size={28} strokeWidth={2} color="var(--ink-300)" />
               <span style={{ font: '700 13px var(--font-ui)', color: 'var(--ink-300)' }}>Mapa de ruta (placeholder)</span>

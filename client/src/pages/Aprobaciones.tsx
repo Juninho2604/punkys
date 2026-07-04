@@ -42,7 +42,7 @@ export function Aprobaciones() {
         <h1 className="h1-module">Tablero de aprobaciones</h1>
         <p className="subtitle">Cotizaciones pendientes de decisión de Cuentas por Cobrar.</p>
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 16, alignItems: 'start' }}>
+      <div className="kanban-grid">
         {COLUMNAS.map((col) => {
           const items = quotes.filter((q) => q.estado === col.estado)
           return (
