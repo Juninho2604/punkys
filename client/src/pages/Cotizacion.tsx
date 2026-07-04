@@ -172,8 +172,11 @@ export function Cotizacion() {
             Número <b style={{ color: 'var(--brand-800)' }}>{generada.numero}</b> · {generada.razon_social}
           </p>
           <div style={{ font: '700 30px var(--font-display)', color: 'var(--brand-900)', margin: '14px 0 26px' }}>{fmtBs(generada.total)}</div>
-          <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
+          <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
             <button className="btn btn-secondary" onClick={reset}>Nueva cotización</button>
+            <button className="btn btn-secondary" onClick={() => window.open(`/cotizaciones/${generada.id}/imprimir`, '_blank')}>
+              🖨 Imprimir
+            </button>
             <button className="btn btn-primary" onClick={enviarAprobacion} disabled={ocupado}>Enviar a aprobación →</button>
           </div>
         </div>

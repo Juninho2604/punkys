@@ -10,6 +10,7 @@ import { Despacho } from './pages/Despacho'
 import { DespachoDetalle } from './pages/DespachoDetalle'
 import { DesignSystem } from './pages/DesignSystem'
 import { TvBoard } from './pages/TvBoard'
+import { ImprimirCotizacion } from './pages/ImprimirCotizacion'
 import type { Rol } from './lib/types'
 
 function Protegida({ roles, children }: { roles?: Rol[]; children: React.ReactNode }) {
@@ -27,6 +28,8 @@ function Rutas() {
     <Routes>
       {/* Centro de Operaciones (TV): acceso por clave en la URL, sin sesión */}
       <Route path="/tv/:clave" element={<TvBoard />} />
+      {/* Hoja imprimible: fuera del Shell para que salga limpia */}
+      <Route path="/cotizaciones/:id/imprimir" element={<Protegida><ImprimirCotizacion /></Protegida>} />
       <Route path="/login" element={user ? <Navigate to="/" replace /> : <Login />} />
       <Route
         element={

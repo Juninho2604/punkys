@@ -1548,3 +1548,232 @@ textarea::placeholder {
   to { transform: translateY(108vh) rotate(720deg); }
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   Hoja imprimible de cotización (formal, carta, blanco y negro)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.print-page {
+  min-height: 100vh;
+  background: #e8edf4;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.print-toolbar {
+  width: 100%;
+  max-width: 816px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.print-sheet {
+  width: 816px; /* carta a 96dpi */
+  max-width: 100%;
+  min-height: 1000px;
+  background: #fff;
+  color: #000;
+  padding: 56px 64px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.18);
+  font: 400 13px/1.55 Georgia, 'Times New Roman', serif;
+  display: flex;
+  flex-direction: column;
+}
+
+.ps-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  border-bottom: 2.5px solid #000;
+  padding-bottom: 16px;
+}
+
+.ps-logo {
+  width: 130px;
+  filter: grayscale(100%) contrast(1.15);
+}
+
+.ps-empresa {
+  text-align: right;
+  font-size: 12px;
+}
+
+.ps-empresa-nombre {
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.ps-titulo {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  margin: 22px 0 6px;
+}
+
+.ps-titulo h1 {
+  font-size: 17px;
+  letter-spacing: 1.5px;
+  margin: 0;
+  font-weight: 700;
+}
+
+.ps-meta td {
+  padding: 1px 0 1px 14px;
+  font-size: 12.5px;
+  text-align: right;
+}
+
+.ps-seccion {
+  margin-top: 18px;
+}
+
+.ps-seccion h2 {
+  font-size: 12px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  border-bottom: 1px solid #000;
+  padding-bottom: 4px;
+  margin: 0 0 8px;
+  font-weight: 700;
+}
+
+.ps-datos {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.ps-datos td {
+  padding: 4px 10px 4px 0;
+  vertical-align: top;
+}
+
+.ps-datos td.k {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: #333;
+  white-space: nowrap;
+  width: 1%;
+  padding-right: 12px;
+  font-weight: 700;
+}
+
+.ps-precios {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.ps-precios th {
+  text-align: left;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  border-bottom: 1.5px solid #000;
+  padding: 5px 8px;
+}
+
+.ps-precios td {
+  border-bottom: 1px solid #bbb;
+  padding: 6px 8px;
+}
+
+.ps-precios .num {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.ps-precios tr.sub td {
+  border-top: 1.5px solid #000;
+  font-weight: 700;
+}
+
+.ps-precios tr.total td {
+  border-top: 2.5px double #000;
+  border-bottom: none;
+  font-size: 15px;
+  font-weight: 700;
+  padding-top: 9px;
+}
+
+.ps-nota {
+  margin-top: 16px;
+  font-size: 11px;
+  color: #333;
+  font-style: italic;
+}
+
+.ps-firmas {
+  margin-top: auto;
+  padding-top: 70px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 80px;
+}
+
+.ps-firmas .linea {
+  border-bottom: 1.5px solid #000;
+  height: 46px;
+}
+
+.ps-firmas .cargo {
+  text-align: center;
+  padding-top: 7px;
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+
+  body {
+    background: #fff;
+  }
+
+  .print-page {
+    background: #fff;
+    padding: 0;
+  }
+
+  .print-sheet {
+    width: 100%;
+    min-height: auto;
+    box-shadow: none;
+    padding: 0;
+  }
+
+  /* Compactar para que la hoja completa (con firmas) quepa en UNA página carta */
+  .ps-firmas {
+    padding-top: 44px;
+    break-inside: avoid;
+  }
+
+  .ps-seccion {
+    margin-top: 13px;
+  }
+
+  .ps-titulo {
+    margin: 14px 0 2px;
+  }
+
+  .ps-nota {
+    margin-top: 10px;
+  }
+}
+
+@page {
+  size: letter;
+  margin: 15mm 16mm;
+}
+

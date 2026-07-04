@@ -169,6 +169,11 @@ Las migraciones se aplican **solas** al arrancar el contenedor `server`.
 6. **Sedes reales** en el wizard + destino Caracas por defecto.
 7. **Higiene de disco**: rotación de logs + prune de build cache en cada deploy.
 8. **Centro de Operaciones TV** (fases 1 y 2 completas).
+9. **Cotización imprimible**: hoja formal carta en blanco y negro
+   (`/cotizaciones/:id/imprimir`, fuera del Shell) con membrete, datos completos,
+   desglose y firmas de **Director** y **Gerente de Cuentas por Cobrar**; cabe en
+   una sola página. Botones: pantalla de éxito del wizard y tarjetas del kanban
+   (🖨). Endpoint `GET /api/quotes/:id`.
 
 ## 8. Pendientes / roadmap
 
@@ -181,7 +186,7 @@ Las migraciones se aplican **solas** al arrancar el contenedor `server`.
 | 🟡 Media | Dominio + **HTTPS** (certbot; pasar `COOKIE_SECURE=true`) — guía lista en `docs/deploy-vps.md` |
 | 🟢 Baja | Merge a `main` + activar GitHub Actions (secrets `VPS_HOST/USER/SSH_KEY`) |
 | 🟢 Baja | Mapa de ruta real en el detalle de despacho (hoy placeholder del diseño) |
-| 🟢 Baja | PDFs de cotización/orden de despacho descargables |
+| 🟢 Baja | Orden de despacho imprimible (la cotización ya lo es) |
 
 ## 9. Convenciones y gotchas
 

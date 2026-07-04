@@ -57,7 +57,18 @@ export function Aprobaciones() {
                   <div key={q.id} className="kanban-card">
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <span className="cell-id">{q.numero}</span>
-                      <span className="caption">{fmtFecha(q.created_at)}</span>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <span className="caption">{fmtFecha(q.created_at)}</span>
+                        <button
+                          title="Imprimir cotización"
+                          onClick={() => window.open(`/cotizaciones/${q.id}/imprimir`, '_blank')}
+                          style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--ink-300)', padding: 2, fontSize: 15, lineHeight: 1 }}
+                          onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--brand-800)')}
+                          onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--ink-300)')}
+                        >
+                          🖨
+                        </button>
+                      </span>
                     </div>
                     <div style={{ font: '800 14.5px var(--font-ui)', color: 'var(--ink-900)' }}>{q.razon_social}</div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

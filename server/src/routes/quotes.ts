@@ -27,6 +27,24 @@ quotesRouter.get('/', async (req, res, next) => {
   }
 })
 
+quotesRouter.get('/:id(\\d+)', async (req, res, next) => {
+  try {
+    const quote = await db('quotes as q')
+      .leftJoin('users as u', 'u.id', 'q.created_by')
+      .leftJoin('users as d', 'd.id', 'q.decided_by')
+      .select('q.*', 'u.nombre as vendedor', 'd.nombre as decidido_por')
+      .where('q.id', Number(req.params.id))
+      .first()
+    if (!quote) {
+      res.status(404).json({ error: 'Cotización no encontrada' })
+      return
+    }
+    res.json({ quote })
+  } catch (err) {
+    next(err)
+  }
+})
+
 const nuevaSchema = z.object({
   razonSocial: z.string().trim().min(2, 'Razón social requerida'),
   rif: z
