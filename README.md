@@ -101,6 +101,13 @@ Ver `.env.example` para la lista completa. Los tres interruptores importantes:
 - `WHATSAPP_PROVIDER=console|twilio|cloudapi` — Twilio es el proveedor actual; la migración a WhatsApp Business Cloud API es cambiar esta variable (ver `docs/notificaciones.md`).
 - `PROFIT_PLUS_MODE=simulado|sqlserver` — simulado hasta tener acceso a la BD del cliente (ver `docs/integracion-profit-plus.md`).
 
+## Documentación
+
+- **[`docs/CONTEXTO.md`](docs/CONTEXTO.md) — documento de contexto integral**: decisiones, arquitectura, estado de producción, pendientes y convenciones. Empieza por aquí.
+- [`docs/deploy-vps.md`](docs/deploy-vps.md) — despliegue y operación del VPS.
+- [`docs/integracion-profit-plus.md`](docs/integracion-profit-plus.md) — integración con Profit Plus 2K12.
+- [`docs/notificaciones.md`](docs/notificaciones.md) — email/WhatsApp y migración a Cloud API.
+
 ## Diseño
 
 La UI recrea en React el handoff `Diseño Intranet Logística Corporativa` (tokens, tipografías Baloo 2 + Nunito Sans, componentes y las 7 pantallas, incluida la mascota frenchie del login que se tapa los ojos al escribir la contraseña). La página **Sistema de Diseño** (visible para el Owner) sirve de QA visual de los tokens.
