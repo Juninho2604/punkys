@@ -32,6 +32,14 @@ tvRouter.get('/board', async (req, res, next) => {
       .where('estado', 'aprobada')
       .andWhere('decided_at', '>=', db.raw(`date_trunc('month', now())`))
       .sum('total')
+    const [{ count: aprobadasMes }] = await db('quotes')
+      .where('estado', 'aprobada')
+      .andWhere('decided_at', '>=', db.raw(`date_trunc('month', now())`))
+      .count()
+    const [{ count: rechazadasMes }] = await db('quotes')
+      .where('estado', 'rechazada')
+      .andWhere('decided_at', '>=', db.raw(`date_trunc('month', now())`))
+      .count()
     const [{ count: porAprobar }] = await db('quotes').where('estado', 'pendiente').count()
     const [{ sum: montoPorAprobar }] = await db('quotes').where('estado', 'pendiente').sum('total')
     const [{ count: enviosActivos }] = await db('shipments').whereNot('estado', 'Entregado').count()
@@ -68,11 +76,11 @@ tvRouter.get('/board', async (req, res, next) => {
     // ── Ticker: últimos eventos derivados de cotizaciones y envíos ──────────
     const ultQuotes = await db('quotes')
       .orderBy('updated_at', 'desc')
-      .limit(10)
+      .limit(15)
       .select('numero', 'razon_social', 'total', 'estado', 'servicio', 'created_at', 'decided_at')
     const ultShipments = await db('shipments')
       .orderBy('updated_at', 'desc')
-      .limit(10)
+      .limit(15)
       .select('numero', 'cliente', 'estado', 'destino_ciudad', 'created_at', 'updated_at')
 
     type Evento = { t: string; texto: string }
@@ -97,6 +105,8 @@ tvRouter.get('/board', async (req, res, next) => {
         cotizacionesMes: Number(cotMes),
         montoCotizadoMes: Number(montoCotizadoMes ?? 0),
         montoAprobadoMes: Number(montoAprobadoMes ?? 0),
+        aprobadasMes: Number(aprobadasMes),
+        rechazadasMes: Number(rechazadasMes),
         porAprobar: Number(porAprobar),
         montoPorAprobar: Number(montoPorAprobar ?? 0),
         enviosActivos: Number(enviosActivos),
@@ -107,7 +117,7 @@ tvRouter.get('/board', async (req, res, next) => {
       pendientes,
       envios,
       incidencias,
-      eventos: eventos.slice(0, 15),
+      eventos: eventos.slice(0, 25),
     })
   } catch (err) {
     next(err)

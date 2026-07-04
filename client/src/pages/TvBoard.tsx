@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { fmtBs } from '../lib/format'
 import { SERVICIO_NOMBRE } from './Cotizacion'
@@ -17,6 +17,8 @@ interface Board {
     cotizacionesMes: number
     montoCotizadoMes: number
     montoAprobadoMes: number
+    aprobadasMes: number
+    rechazadasMes: number
     porAprobar: number
     montoPorAprobar: number
     enviosActivos: number
@@ -52,6 +54,10 @@ export function TvBoard() {
   const [actualizado, setActualizado] = useState<Date | null>(null)
   const [reloj, setReloj] = useState(new Date())
   const [escena, setEscena] = useState(0)
+  const [celebra, setCelebra] = useState<string | null>(null)
+  // Eventos ya vistos entre polls, para detectar aprobaciones/entregas nuevas
+  const vistos = useRef<Set<string> | null>(null)
+  const celebraTimer = useRef<ReturnType<typeof setTimeout>>()
 
   // Datos
   useEffect(() => {
@@ -62,6 +68,21 @@ export function TvBoard() {
         if (!res.ok) throw new Error(String(res.status))
         const data = (await res.json()) as Board
         if (!vivo) return
+
+        // Celebración: aprobación o entrega que no estaba en el poll anterior
+        const claves = data.eventos.map((e) => e.t + e.texto)
+        if (vistos.current) {
+          const nuevo = data.eventos.find(
+            (e, i) => !vistos.current!.has(claves[i]) && (e.texto.startsWith('✅') || e.texto.startsWith('🎉')),
+          )
+          if (nuevo) {
+            setCelebra(nuevo.texto)
+            clearTimeout(celebraTimer.current)
+            celebraTimer.current = setTimeout(() => setCelebra(null), 7000)
+          }
+        }
+        vistos.current = new Set(claves)
+
         setBoard(data)
         setOffline(false)
         setActualizado(new Date())
@@ -147,9 +168,29 @@ export function TvBoard() {
           {board.eventos.length === 0 && <span>🐾 Punky Partners · Centro de Operaciones · esperando actividad del día…</span>}
         </div>
       </div>
+
+      {celebra && (
+        <div className="tv-celebra">
+          {CONFETI.map((c, i) => (
+            <span key={i} className="confeti" style={c} />
+          ))}
+          <div className="tv-celebra-emoji">🎉</div>
+          <div className="tv-celebra-texto">{celebra}</div>
+        </div>
+      )}
     </div>
   )
 }
+
+// Piezas de confeti con posiciones/tiempos fijos (sin Math.random para que
+// el render sea estable entre re-renders)
+const COLORES_CONFETI = ['#f08a24', '#7fe3a8', '#8db8f2', '#ffce7a', '#ffffff', '#f5a9bb']
+const CONFETI = Array.from({ length: 18 }, (_, i) => ({
+  left: `${(i * 137) % 100}%`,
+  background: COLORES_CONFETI[i % COLORES_CONFETI.length],
+  animationDelay: `${(i % 6) * 0.35}s`,
+  animationDuration: `${2.6 + (i % 4) * 0.5}s`,
+}))
 
 // ── Escena 1 · Pulso de hoy ──────────────────────────────────────────────────
 function EscenaPulso({ board }: { board: Board }) {
@@ -271,4 +312,73 @@ function EscenaDespachos({ board }: { board: Board }) {
   )
 }
 
-const ESCENAS = [EscenaPulso, EscenaAprobaciones, EscenaDespachos]
+// ── Escena 4 · Embudo operacional ────────────────────────────────────────────
+function EscenaEmbudo({ board }: { board: Board }) {
+  const { kpis } = board
+  // Sobre las decididas del mes (aprobadas + rechazadas), no sobre las creadas:
+  // las cohortes difieren y mezclarlas puede dar >100%.
+  const decididas = kpis.aprobadasMes + kpis.rechazadasMes
+  const tasa = decididas > 0 ? Math.round((kpis.aprobadasMes / decididas) * 100) : null
+  const pasos = [
+    { label: 'Cotizado', valor: kpis.cotizacionesMes, detalle: fmtBs(kpis.montoCotizadoMes), hint: 'este mes' },
+    { label: 'Aprobado', valor: kpis.aprobadasMes, detalle: fmtBs(kpis.montoAprobadoMes), hint: 'este mes', tono: 'ok' },
+    { label: 'En despacho', valor: kpis.enviosActivos, detalle: `${kpis.incidencias} incidencia${kpis.incidencias === 1 ? '' : 's'}`, hint: 'ahora mismo', tono: kpis.incidencias > 0 ? 'bad' : undefined },
+    { label: 'Entregado', valor: kpis.entregadosMes, detalle: `${kpis.entregasATiempo}% a tiempo`, hint: 'este mes', tono: 'ok' },
+  ]
+  return (
+    <section className="tv-scene">
+      <div className="tv-scene-title">
+        Embudo operacional <span className="tv-scene-hint">de la cotización a la entrega</span>
+      </div>
+      <div className="tv-funnel">
+        {pasos.map((p, i) => (
+          <div key={p.label} style={{ display: 'contents' }}>
+            <div className={`tv-kpi${p.tono ? ` ${p.tono}` : ''}`} style={{ textAlign: 'center' }}>
+              <div className="label">{p.label}</div>
+              <div className="valor">{p.valor}</div>
+              <div className="detalle">{p.detalle}</div>
+              <div className="detalle" style={{ opacity: 0.7 }}>{p.hint}</div>
+            </div>
+            {i < pasos.length - 1 && <div className="tv-funnel-arrow">→</div>}
+          </div>
+        ))}
+      </div>
+      <div className="tv-funnel-foot">
+        {tasa !== null ? `Tasa de aprobación del mes: ${tasa}%` : 'Sin cotizaciones este mes todavía'}
+        {kpis.rechazadasMes > 0 && ` · ${kpis.rechazadasMes} rechazada${kpis.rechazadasMes === 1 ? '' : 's'}`}
+        {kpis.porAprobar > 0 && ` · ${kpis.porAprobar} esperando decisión (${fmtBs(kpis.montoPorAprobar)})`}
+      </div>
+    </section>
+  )
+}
+
+// ── Escena 5 · Actividad reciente ────────────────────────────────────────────
+function EscenaActividad({ board }: { board: Board }) {
+  const items = board.eventos.slice(0, 9)
+  return (
+    <section className="tv-scene">
+      <div className="tv-scene-title">
+        Actividad reciente <span className="tv-scene-hint">lo último que pasó en la operación</span>
+      </div>
+      {items.length === 0 ? (
+        <div className="tv-empty">
+          <div style={{ fontSize: 'clamp(40px, 4vw, 72px)' }}>🐾</div>
+          Sin actividad todavía. ¡A cotizar!
+        </div>
+      ) : (
+        <div className="tv-rows">
+          {items.map((e, i) => (
+            <div key={i} className="tv-row" style={{ gridTemplateColumns: '150px 1fr' }}>
+              <span className="sub">
+                {new Date(e.t).toLocaleTimeString('es-VE', { hour: '2-digit', minute: '2-digit' })}
+              </span>
+              <span>{e.texto}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </section>
+  )
+}
+
+const ESCENAS = [EscenaPulso, EscenaEmbudo, EscenaAprobaciones, EscenaDespachos, EscenaActividad]
