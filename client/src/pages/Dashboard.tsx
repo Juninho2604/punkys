@@ -84,6 +84,9 @@ export function Dashboard() {
               <div className="table-head cols-envios">
                 <span>Envío</span><span>Cliente</span><span>Ruta</span><span>Estado</span>
               </div>
+              {data.recientes.length === 0 && (
+                <div style={{ padding: '18px 20px' }} className="cell-sub">Aún no hay envíos. Se crean automáticamente al aprobar una cotización.</div>
+              )}
               {data.recientes.map((s) => (
                 <div key={s.id} className="table-row cols-envios" onClick={() => navigate(`/despacho/${s.id}`)}>
                   <span className="cell-id">{s.numero}</span>

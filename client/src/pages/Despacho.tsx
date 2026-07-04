@@ -24,6 +24,9 @@ export function Despacho() {
             <div className="table-head cols-despacho">
               <span>Envío</span><span>Cliente</span><span>Ruta</span><span>Transportista</span><span>Estado</span><span>ETA</span>
             </div>
+            {shipments.length === 0 && (
+              <div style={{ padding: '18px 20px' }} className="cell-sub">Aún no hay envíos. Se crean automáticamente al aprobar una cotización.</div>
+            )}
             {shipments.map((s) => (
               <div key={s.id} className="table-row cols-despacho" style={{ padding: '14px 20px' }} onClick={() => navigate(`/despacho/${s.id}`)}>
                 <span className="cell-id">{s.numero}</span>
