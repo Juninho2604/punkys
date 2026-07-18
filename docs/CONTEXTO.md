@@ -217,6 +217,10 @@ Las migraciones se aplican **solas** al arrancar el contenedor `server`.
 
 ## 10. Documentos relacionados
 
+- **`docs/PLAN-MAESTRO.md`** — hoja de ruta oficial de la fusión con el sistema
+  previo del cliente (GAS/Sheets/Netlify, analizado en julio 2026): qué se absorbe
+  de cada uno y en qué orden. **Leer junto con este documento.**
+
 - `README.md` — setup local y visión general
 - `docs/deploy-vps.md` — guía completa del VPS (incl. HTTPS futuro)
 - `docs/integracion-profit-plus.md` — qué falta del cliente y cómo activar
