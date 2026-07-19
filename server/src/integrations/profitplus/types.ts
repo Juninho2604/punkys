@@ -44,7 +44,7 @@ export interface PPPushResult {
 }
 
 export interface PPStatus {
-  modo: 'simulado' | 'sqlserver'
+  modo: 'simulado' | 'pipeline' | 'sqlserver'
   conectado: boolean
   detalle: string
 }

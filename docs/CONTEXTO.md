@@ -189,13 +189,19 @@ Las migraciones se aplican **solas** al arrancar el contenedor `server`.
     buscador mobile-first, hoja imprimible por renglones, kanban/dashboard/TV y
     plantillas de notificación adaptados. La hoja imprimible ahora es por renglones
     (con fallback al modelo viejo para históricas).
+11. **Puente de datos (Fase 1 del plan maestro)**: tablas `pp_products`/`sync_log`,
+    endpoint `POST /api/sync/productos` (token `SYNC_TOKEN`, sync completa con
+    desactivación de descontinuados), conector `PROFIT_PLUS_MODE=pipeline` que
+    cotiza contra el inventario sincronizado, y `pipeline/sync_inventario.py`
+    para la PC del cliente (lee catalogo-activo.json + lista-precios-data.json
+    de los extractores existentes). Ver `docs/puente-datos.md`.
 
 ## 8. Pendientes / roadmap
 
 | Prioridad | Tema |
 |---|---|
 | 🔴 Alta | **Gestión de usuarios**: cambiar contraseñas (todas siguen en `punky123`), crear usuarios reales del equipo, desactivar |
-| 🔴 Alta | **Inventario real**: los precios/stock salen del catálogo DEMO del conector simulado hasta conectar Profit Plus (o definir una fuente interina) |
+| 🔴 Alta | **Activar el puente de datos** (código listo, ver `docs/puente-datos.md`): SYNC_TOKEN + PROFIT_PLUS_MODE=pipeline en el VPS + script en la PC del cliente. Decisiones pendientes: mapeo de sedes 002/035, lista de precios, moneda USD/Bs |
 | 🟡 Media | Credenciales **Twilio** (y luego migración a Cloud API con plantillas aprobadas de Meta) y **SMTP** — hoy todo en modo `console` |
 | 🟡 Media | **Profit Plus**: implementar `SqlServerConnector` cuando llegue el `.md` del cliente (requisitos en `docs/integracion-profit-plus.md`) |
 | 🟡 Media | Dominio + **HTTPS** (certbot; pasar `COOKIE_SECURE=true`) — guía lista en `docs/deploy-vps.md` |

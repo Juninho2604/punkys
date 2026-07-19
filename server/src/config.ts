@@ -18,6 +18,9 @@ export const config = {
   // Clave de acceso del Centro de Operaciones (modo TV, solo lectura).
   // Vacía = modo TV deshabilitado. URL: /tv/<clave>
   tvAccessKey: process.env.TV_ACCESS_KEY ?? '',
+  // Token del puente de datos (los extractores de la PC del cliente lo usan
+  // para subir inventario). Vacío = ingesta deshabilitada.
+  syncToken: process.env.SYNC_TOKEN ?? '',
 
   email: {
     provider: env('EMAIL_PROVIDER', 'console') as 'console' | 'smtp',
@@ -45,7 +48,7 @@ export const config = {
   },
 
   profitPlus: {
-    mode: env('PROFIT_PLUS_MODE', 'simulado') as 'simulado' | 'sqlserver',
+    mode: env('PROFIT_PLUS_MODE', 'simulado') as 'simulado' | 'pipeline' | 'sqlserver',
     db: {
       host: process.env.PP_DB_HOST ?? '',
       port: Number(process.env.PP_DB_PORT ?? 1433),
