@@ -76,7 +76,10 @@ services:
     depends_on:
       - server
     ports:
-      - "80:80"
+      # Puerto del host configurable (WEB_PORT en .env). Por defecto 8080 para
+      # no chocar con otros servicios que ya usen el 80 en el VPS (ej. Hermes).
+      # Adentro el contenedor siempre sirve por el 80.
+      - "${WEB_PORT:-8080}:80"
       # HTTPS (cuando actives dominio + certbot, ver docs/deploy-vps.md):
       # - "443:443"
 

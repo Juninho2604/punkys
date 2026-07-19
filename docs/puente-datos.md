@@ -50,7 +50,7 @@ punky-deploy
    - `PUNKY_TASA` = multiplicador de precio (1 = dejar el monto tal cual).
 4. Agregar al final de `actualizar-datos.ps1` (después de los extractores):
    ```powershell
-   $env:PUNKY_API_URL   = "http://80.241.212.7"
+   $env:PUNKY_API_URL   = "http://80.241.212.7:8080"
    $env:PUNKY_SYNC_TOKEN= "<el SYNC_TOKEN del VPS>"
    $env:PUNKY_LISTA     = "<nombre de la lista elegida>"
    py "G:\Mi unidad\AI OPTIMIZACIONES\Intranet\_scripts\sync_inventario.py" >> "G:\Mi unidad\AI OPTIMIZACIONES\Intranet\_scripts\actualizar.log"

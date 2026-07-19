@@ -7,8 +7,8 @@ Guía paso a paso para dejar la intranet corriendo en tu VPS Contabo, primero po
 Arquitectura en el VPS (todo en Docker Compose):
 
 ```
-Internet ──▶ :80 ─ web (Nginx)  ──/──▶ frontend estático (React build)
-                       └── /api ──▶ server (Express :4000) ──▶ db (PostgreSQL)
+Internet ──▶ :8080 ─ web (Nginx)  ──/──▶ frontend estático (React build)
+   (WEB_PORT)          └── /api ──▶ server (Express :4000) ──▶ db (PostgreSQL)
 ```
 
 > Reemplaza `TU_IP` por la IP pública de tu Contabo en todos los comandos.

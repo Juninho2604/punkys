@@ -44,7 +44,8 @@ Monorepo npm workspaces:
 
 **En producción**: Nginx (contenedor `web`) sirve el build estático y proxya
 `/api` → `server:4000`. Mismo origen ⇒ sin CORS y cookies directas. Postgres y la
-API **no** están expuestos a internet; solo el puerto 80.
+API **no** están expuestos a internet; solo el puerto web del host (`WEB_PORT`,
+por defecto **8080** — el 80 lo usa otro servicio del VPS, "Hermes").
 
 ### Piezas del servidor
 
@@ -156,9 +157,12 @@ marino, tipografía a distancia, cursor oculto.
 - **Higiene de disco**: logs de contenedores rotados (3×10 MB c/u, en el compose);
   imágenes huérfanas y caché de build se limpian en cada deploy. Los datos viven en
   el volumen `pgdata` y **nunca** los toca la limpieza.
+- **Puerto**: el 80 lo ocupa otro servicio del VPS ("Hermes", agente de IA del
+  cliente — **no se toca**). Punky publica en `WEB_PORT` (por defecto **8080**):
+  el sitio es `http://80.241.212.7:8080`. Configurable en el `.env` del VPS.
 - `.env` de producción (en el VPS, no en git): `POSTGRES_PASSWORD`, `JWT_SECRET`,
-  `CLIENT_ORIGIN=http://80.241.212.7`, `COOKIE_SECURE=false` (¡HTTP! — pasar a
-  `true` al activar HTTPS), `TV_ACCESS_KEY`.
+  `CLIENT_ORIGIN=http://80.241.212.7:8080`, `WEB_PORT=8080`, `COOKIE_SECURE=false`
+  (¡HTTP! — pasar a `true` al activar HTTPS), `TV_ACCESS_KEY`.
 - **Datos**: la base fue limpiada de demos (`clean.js`); el cliente está validando
   con datos reales. Numeración arrancó en `COT-0001`/`ENV-0001`.
 - **Usuarios** (⚠️ contraseña `punky123` en TODOS — cambio pendiente):
@@ -183,7 +187,7 @@ Las migraciones se aplican **solas** al arrancar el contenedor `server`.
    conector Profit Plus, frontend hi-fi (7 pantallas), seed demo.
 2. **Deploy**: Docker Compose, Nginx, guía Contabo, ajustes cookie/proxy.
 3. **Puesta en marcha real**: VPS configurado, firewall, token GitHub, stack
-   arriba en `http://80.241.212.7`, comando `punky-deploy`.
+   arriba en `http://80.241.212.7:8080`, comando `punky-deploy`.
 4. **Vista móvil**: drawer, grillas responsive, tablas con scroll.
 5. **Limpieza de demos** (`clean.ts`) + estados vacíos con mensaje guía.
 6. **Sedes reales** en el wizard + destino Caracas por defecto.

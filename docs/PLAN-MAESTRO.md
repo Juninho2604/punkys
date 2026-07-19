@@ -39,7 +39,7 @@ Supabase (auth) + PC de oficina que exporta Excel de Profit 6×/día.
 - **No apto para agentes de IA**: un agente operando sobre Sheets + GAS sin
   transacciones ni permisos de servidor es un riesgo, no una función.
 
-### Sistema B — el nuestro (este repo) · `http://80.241.212.7`
+### Sistema B — el nuestro (este repo) · `http://80.241.212.7:8080`
 React + Express/TS + PostgreSQL en el VPS propio del cliente, Docker.
 
 **Lo mejor (es la base):**

@@ -15,7 +15,7 @@ Solo librería estándar.
 import json, os, sys, urllib.request, urllib.error
 from collections import defaultdict
 
-API_URL = os.environ.get("PUNKY_API_URL", "http://80.241.212.7").rstrip("/")
+API_URL = os.environ.get("PUNKY_API_URL", "http://80.241.212.7:8080").rstrip("/")
 TOKEN = os.environ.get("PUNKY_SYNC_TOKEN", "")
 SRC = r"G:\Mi unidad\AI OPTIMIZACIONES\Intranet\Inventario\ventas-data.json"
 

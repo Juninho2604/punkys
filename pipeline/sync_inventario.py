@@ -10,7 +10,7 @@ Uso (en la PC de la oficina, después de los extractores):
     py sync_inventario.py
 
 Configurable por variables de entorno o editando las constantes:
-    PUNKY_API_URL    (ej: http://80.241.212.7)
+    PUNKY_API_URL    (ej: http://80.241.212.7:8080)
     PUNKY_SYNC_TOKEN (el mismo SYNC_TOKEN del .env del VPS)
     PUNKY_LISTA      (nombre de la lista de precios a usar; vacío = la primera)
     PUNKY_TASA       (multiplicador opcional de precio, ej. tasa Bs/USD; 1 = tal cual)
@@ -20,7 +20,7 @@ Solo usa la librería estándar (urllib), igual que los extractores: sin pip.
 import json, os, sys, urllib.request
 
 # ── Configuración ────────────────────────────────────────────────────────────
-API_URL = os.environ.get("PUNKY_API_URL", "http://80.241.212.7").rstrip("/")
+API_URL = os.environ.get("PUNKY_API_URL", "http://80.241.212.7:8080").rstrip("/")
 TOKEN = os.environ.get("PUNKY_SYNC_TOKEN", "")
 LISTA = os.environ.get("PUNKY_LISTA", "")  # "" = primera lista disponible por producto
 TASA = float(os.environ.get("PUNKY_TASA", "1"))
