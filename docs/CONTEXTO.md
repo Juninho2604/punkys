@@ -91,8 +91,9 @@ API **no** están expuestos a internet; solo el puerto 80.
 |---|---|
 | vendedor | Dashboard, Cotización (wizard), Despacho (lectura) |
 | cxc | Dashboard, Aprobaciones (kanban + acciones) |
+| facturacion | Dashboard, Facturación (registrar nº de factura → crea el despacho) |
 | despacho | Dashboard, Despacho (avanzar etapas, incidencias, transportista) |
-| admin (Owner) | Todo + Sistema de Diseño + estado de integraciones |
+| admin (Owner) | Todo + Usuarios + Sistema de Diseño + estado de integraciones |
 
 El middleware `requireRole` lo exige en el servidor (no es solo UI). Admin siempre pasa.
 
@@ -198,6 +199,12 @@ Las migraciones se aplican **solas** al arrancar el contenedor `server`.
     buscador mobile-first, hoja imprimible por renglones, kanban/dashboard/TV y
     plantillas de notificación adaptados. La hoja imprimible ahora es por renglones
     (con fallback al modelo viejo para históricas).
+12. **Etapa de Facturación (Fase 3)**: flujo real CxC → Facturación → Despacho.
+    Aprobar YA NO crea el envío: notifica al equipo de facturación; la página
+    Facturación registra el nº de factura de Profit (único, validado) y AHÍ nace
+    la orden de despacho con sus notificaciones. Estado nuevo 'facturada'
+    (columna Aprobado del kanban la incluye, sin devolver); embudo del TV con 5
+    etapas y evento 🧾 en el ticker; nº de factura en la hoja imprimible.
 11. **Puente de datos (Fase 1 del plan maestro)**: tablas `pp_products`/`sync_log`,
     endpoint `POST /api/sync/productos` (token `SYNC_TOKEN`, sync completa con
     desactivación de descontinuados), conector `PROFIT_PLUS_MODE=pipeline` que
@@ -212,7 +219,7 @@ Las migraciones se aplican **solas** al arrancar el contenedor `server`.
 | 🔴 Alta | **Cambiar las contraseñas de demo** (`punky123`) usando la nueva pantalla Usuarios, y crear los usuarios reales del equipo |
 | 🔴 Alta | **Activar el puente de datos** (código listo, ver `docs/puente-datos.md`): SYNC_TOKEN + PROFIT_PLUS_MODE=pipeline en el VPS + script en la PC del cliente. Decisiones pendientes: mapeo de sedes 002/035, lista de precios, moneda USD/Bs |
 | 🟡 Media | Credenciales **Twilio** (y luego migración a Cloud API con plantillas aprobadas de Meta) y **SMTP** — hoy todo en modo `console` |
-| 🟡 Media | **Profit Plus**: implementar `SqlServerConnector` cuando llegue el `.md` del cliente (requisitos en `docs/integracion-profit-plus.md`) |
+| 🟡 Media | **Profit Plus**: implementar `SqlServerConnector` — el usuario gestiona con otra IA la investigación del esquema/acceso al SQL Server (lectura + inyección) |
 | 🟡 Media | Dominio + **HTTPS** (certbot; pasar `COOKIE_SECURE=true`) — guía lista en `docs/deploy-vps.md` |
 | 🟢 Baja | Merge a `main` + activar GitHub Actions (secrets `VPS_HOST/USER/SSH_KEY`) |
 | 🟢 Baja | Mapa de ruta real en el detalle de despacho (hoy placeholder del diseño) |
