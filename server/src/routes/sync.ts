@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { db } from '../db/knex.js'
 import { config } from '../config.js'
 import { requireAuth, requireRole } from '../middleware/auth.js'
+import { normalizarNombre } from '../services/normalize.js'
 
 // Puente de datos (Fase 1 del plan maestro): los extractores de la PC del
 // cliente suben aquí el inventario real de Profit. Autenticación por token
@@ -93,13 +94,126 @@ syncRouter.post('/productos', async (req, res, next) => {
   }
 })
 
+// ── Cuentas por Cobrar (snapshot completo por documento) ─────────────────────
+const cxcSchema = z.object({
+  fuente: z.string().trim().max(200).optional(),
+  cuentas: z
+    .array(
+      z.object({
+        cliente: z.string().trim().min(1).max(300),
+        vendedor: z.string().trim().max(200).optional().default(''),
+        documento: z.string().trim().max(60).optional().default(''),
+        tipoDoc: z.string().trim().max(40).optional().default(''),
+        fechaEmision: z.string().trim().max(20).optional().default(''),
+        fechaVenc: z.string().trim().max(20).optional().default(''),
+        total: z.number().default(0),
+        saldo: z.number(),
+        diasVencido: z.number().int().default(0),
+        moneda: z.string().trim().max(10).optional().default('USD'),
+      }),
+    )
+    .max(50000),
+})
+
+syncRouter.post('/cxc', async (req, res, next) => {
+  try {
+    if (!config.syncToken) return void res.status(503).json({ error: 'Ingesta deshabilitada' })
+    if (!tokenValido(req.headers.authorization)) return void res.status(401).json({ error: 'Token inválido' })
+    const { fuente, cuentas } = cxcSchema.parse(req.body)
+
+    await db.transaction(async (trx) => {
+      await trx('pp_cxc').del()
+      if (cuentas.length) {
+        await trx.batchInsert(
+          'pp_cxc',
+          cuentas.map((c) => ({
+            cliente_norm: normalizarNombre(c.cliente),
+            cliente: c.cliente,
+            vendedor: c.vendedor || null,
+            documento: c.documento || null,
+            tipo_doc: c.tipoDoc || null,
+            fecha_emision: c.fechaEmision || null,
+            fecha_venc: c.fechaVenc || null,
+            total: c.total,
+            saldo: c.saldo,
+            dias_vencido: c.diasVencido,
+            moneda: c.moneda,
+          })),
+          500,
+        )
+      }
+      await trx('sync_log').insert({ dataset: 'cxc', fuente: fuente ?? null, registros: cuentas.length })
+    })
+    console.log(`🔄 [Sync] CxC: ${cuentas.length} documentos · fuente: ${fuente ?? '—'}`)
+    res.json({ ok: true, recibidos: cuentas.length })
+  } catch (err) {
+    next(err)
+  }
+})
+
+// ── Ventas agregadas (snapshot completo por mes × vendedor × categoría) ──────
+const ventasSchema = z.object({
+  fuente: z.string().trim().max(200).optional(),
+  ventas: z
+    .array(
+      z.object({
+        mes: z.string().trim().regex(/^\d{4}-\d{2}$/, 'mes debe ser YYYY-MM'),
+        vendedor: z.string().trim().max(200).optional().default(''),
+        categoria: z.string().trim().max(120).optional().default('otros'),
+        unidades: z.number().default(0),
+        montoUsd: z.number().default(0),
+        margenUsd: z.number().nullable().optional(),
+      }),
+    )
+    .max(50000),
+})
+
+syncRouter.post('/ventas', async (req, res, next) => {
+  try {
+    if (!config.syncToken) return void res.status(503).json({ error: 'Ingesta deshabilitada' })
+    if (!tokenValido(req.headers.authorization)) return void res.status(401).json({ error: 'Token inválido' })
+    const { fuente, ventas } = ventasSchema.parse(req.body)
+
+    await db.transaction(async (trx) => {
+      await trx('pp_ventas').del()
+      if (ventas.length) {
+        await trx.batchInsert(
+          'pp_ventas',
+          ventas.map((v) => ({
+            mes: v.mes,
+            vendedor: v.vendedor || null,
+            categoria: v.categoria || 'otros',
+            unidades: v.unidades,
+            monto_usd: v.montoUsd,
+            margen_usd: v.margenUsd ?? null,
+          })),
+          500,
+        )
+      }
+      await trx('sync_log').insert({ dataset: 'ventas', fuente: fuente ?? null, registros: ventas.length })
+    })
+    console.log(`🔄 [Sync] Ventas: ${ventas.length} filas · fuente: ${fuente ?? '—'}`)
+    res.json({ ok: true, recibidos: ventas.length })
+  } catch (err) {
+    next(err)
+  }
+})
+
 // Estado del puente (para el admin en la intranet)
 syncRouter.get('/estado', requireAuth, requireRole(), async (_req, res, next) => {
   try {
     const ultimos = await db('sync_log').orderBy('created_at', 'desc').limit(10)
     const [{ count: activos }] = await db('pp_products').where('activo', true).count()
     const [{ count: total }] = await db('pp_products').count()
-    res.json({ productosActivos: Number(activos), productosTotal: Number(total), sincronizaciones: ultimos })
+    const [{ count: cxc }] = await db('pp_cxc').count()
+    const [{ count: ventas }] = await db('pp_ventas').count()
+    res.json({
+      productosActivos: Number(activos),
+      productosTotal: Number(total),
+      documentosCxc: Number(cxc),
+      filasVentas: Number(ventas),
+      sincronizaciones: ultimos,
+    })
   } catch (err) {
     next(err)
   }

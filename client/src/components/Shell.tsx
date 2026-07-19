@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useState } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { Bell, CheckCircle, FileText, KeyRound, LayoutGrid, LogOut, Menu, Palette, ChevronLeft, ReceiptText, Search, Truck, Users } from 'lucide-react'
+import { BarChart3, Bell, CheckCircle, FileText, KeyRound, LayoutGrid, LogOut, Menu, Palette, ChevronLeft, ReceiptText, Search, Truck, Users, Wallet } from 'lucide-react'
 import { ROL_LABEL, useAuth } from '../lib/auth'
 import { api } from '../lib/api'
 import { useToast } from '../lib/toast'
@@ -24,6 +24,7 @@ const NAV: NavItem[] = [
   { to: '/cotizacion', label: 'Cotización', icon: FileText, roles: ['vendedor', 'admin'] },
   { to: '/aprobaciones', label: 'Aprobaciones', icon: CheckCircle, roles: ['cxc', 'admin'], badge: 'pend' },
   { to: '/facturacion', label: 'Facturación', icon: ReceiptText, roles: ['facturacion', 'admin'], badge: 'fact' },
+  { to: '/cuentas-por-cobrar', label: 'Cuentas por Cobrar', icon: Wallet, roles: ['cxc', 'admin'] },
   { to: '/despacho', label: 'Despacho', icon: Truck, roles: ['vendedor', 'despacho', 'admin'] },
 ]
 
@@ -32,6 +33,8 @@ const TITULOS: Record<string, string> = {
   '/cotizacion': 'Cotización',
   '/aprobaciones': 'Aprobaciones',
   '/facturacion': 'Facturación',
+  '/cuentas-por-cobrar': 'Cuentas por Cobrar',
+  '/ventas': 'Ventas Analítica',
   '/despacho': 'Despacho',
   '/usuarios': 'Usuarios',
   '/sistema-diseno': 'Sistema de Diseño',
@@ -99,6 +102,10 @@ export function Shell() {
             {user.rol === 'admin' && (
               <>
                 <div className="sidebar-divider" />
+                <NavLink to="/ventas" className={({ isActive }) => `sidebar-item${isActive ? ' active' : ''}`}>
+                  <BarChart3 size={19} strokeWidth={2.2} />
+                  {!collapsed && <span className="label">Ventas Analítica</span>}
+                </NavLink>
                 <NavLink to="/usuarios" className={({ isActive }) => `sidebar-item${isActive ? ' active' : ''}`}>
                   <Users size={19} strokeWidth={2.2} />
                   {!collapsed && <span className="label">Usuarios</span>}

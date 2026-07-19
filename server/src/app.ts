@@ -12,6 +12,8 @@ import { tvRouter } from './routes/tv.js'
 import { inventoryRouter } from './routes/inventory.js'
 import { syncRouter } from './routes/sync.js'
 import { usersRouter } from './routes/users.js'
+import { cxcRouter } from './routes/cxc.js'
+import { ventasRouter } from './routes/ventas.js'
 
 export function createApp() {
   const app = express()
@@ -32,6 +34,8 @@ export function createApp() {
   app.use('/api/inventario', inventoryRouter)
   app.use('/api/sync', syncRouter)
   app.use('/api/users', usersRouter)
+  app.use('/api/cxc', cxcRouter)
+  app.use('/api/ventas', ventasRouter)
 
   app.use(errorHandler)
   return app

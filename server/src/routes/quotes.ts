@@ -4,6 +4,8 @@ import { db } from '../db/knex.js'
 import { requireAuth, requireRole } from '../middleware/auth.js'
 import { SERVICIOS, IVA_RATE, SEGURO_RATE } from '../services/pricing.js'
 import { crearCotizacion, enviarAAprobacion, decidirCotizacion, devolverAPendiente, facturarCotizacion } from '../services/workflow.js'
+import { saldoDeClientes } from '../services/cxc.js'
+import { normalizarNombre } from '../services/normalize.js'
 
 export const quotesRouter = Router()
 quotesRouter.use(requireAuth)
@@ -40,6 +42,16 @@ quotesRouter.get('/', async (req, res, next) => {
         ? `${a.productos} producto${Number(a.productos) === 1 ? '' : 's'} · ${a.unidades} und`
         : (x.servicio ?? '—')
     }
+
+    // Saldo por cobrar del cliente (solo para quien decide: cxc y admin)
+    if (req.user!.rol === 'cxc' || req.user!.rol === 'admin') {
+      const saldos = await saldoDeClientes(quotes.map((x) => x.razon_social))
+      for (const x of quotes) {
+        const s = saldos.get(normalizarNombre(x.razon_social))
+        if (s) x.cxc = { saldo: s.saldo, vencido: s.vencido, peorDiasVencido: s.peorDiasVencido, moneda: s.moneda }
+      }
+    }
+
     res.json({ quotes })
   } catch (err) {
     next(err)

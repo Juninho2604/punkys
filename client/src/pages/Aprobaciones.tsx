@@ -79,6 +79,22 @@ export function Aprobaciones() {
                       </span>
                       <span style={{ font: '800 14px var(--font-ui)', color: 'var(--brand-900)' }}>{fmtBs(q.total)}</span>
                     </div>
+                    {q.estado === 'pendiente' && q.cxc && q.cxc.saldo > 0 && (
+                      <div
+                        className="caption"
+                        style={{
+                          padding: '5px 9px',
+                          borderRadius: 8,
+                          background: q.cxc.vencido > 0 ? 'var(--danger-soft)' : 'var(--warning-soft)',
+                          color: q.cxc.vencido > 0 ? 'var(--danger-500)' : 'var(--warning-600)',
+                          fontWeight: 700,
+                        }}
+                        title="Saldo por cobrar del cliente en Profit"
+                      >
+                        {q.cxc.vencido > 0 ? '⚠️' : '💳'} Debe {q.cxc.moneda} {q.cxc.saldo.toLocaleString('es-VE', { maximumFractionDigits: 0 })}
+                        {q.cxc.vencido > 0 && ` · ${q.cxc.moneda} ${q.cxc.vencido.toLocaleString('es-VE', { maximumFractionDigits: 0 })} vencido (${q.cxc.peorDiasVencido}d)`}
+                      </div>
+                    )}
                     {q.estado === 'rechazada' && q.motivo_rechazo && (
                       <div className="caption" style={{ color: 'var(--danger-500)' }}>{q.motivo_rechazo}</div>
                     )}

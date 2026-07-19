@@ -54,6 +54,7 @@ export interface Quote {
   vendedor?: string
   resumen?: string
   items?: QuoteItem[]
+  cxc?: { saldo: number; vencido: number; peorDiasVencido: number; moneda: string }
   created_at: string
 }
 
