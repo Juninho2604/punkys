@@ -96,6 +96,15 @@ API **no** están expuestos a internet; solo el puerto 80.
 
 El middleware `requireRole` lo exige en el servidor (no es solo UI). Admin siempre pasa.
 
+**Gestión de usuarios (Fase 2)**: pantalla **Usuarios** (solo admin) para crear,
+cambiar rol, activar/desactivar y restablecer contraseñas; todos los roles pueden
+cambiar su propia clave (icono 🔑 del header). Guardas del servidor: no puedes
+desactivarte a ti mismo ni dejar la intranet sin un admin activo; usuarios
+inactivos no pueden loguearse. Reemplaza el rol que cumplía Supabase en el
+sistema previo del cliente (aquí el login y los permisos viven en nuestra BD,
+sin servicios externos). Permisos granulares por módulo (modelo de los 14 del
+sistema previo): pendiente, llegará con los módulos de BI.
+
 ## 4. Frontend
 
 Recreación **hi-fi** del handoff de diseño (`Diseño Intranet Logística Corporativa`,
@@ -200,7 +209,7 @@ Las migraciones se aplican **solas** al arrancar el contenedor `server`.
 
 | Prioridad | Tema |
 |---|---|
-| 🔴 Alta | **Gestión de usuarios**: cambiar contraseñas (todas siguen en `punky123`), crear usuarios reales del equipo, desactivar |
+| 🔴 Alta | **Cambiar las contraseñas de demo** (`punky123`) usando la nueva pantalla Usuarios, y crear los usuarios reales del equipo |
 | 🔴 Alta | **Activar el puente de datos** (código listo, ver `docs/puente-datos.md`): SYNC_TOKEN + PROFIT_PLUS_MODE=pipeline en el VPS + script en la PC del cliente. Decisiones pendientes: mapeo de sedes 002/035, lista de precios, moneda USD/Bs |
 | 🟡 Media | Credenciales **Twilio** (y luego migración a Cloud API con plantillas aprobadas de Meta) y **SMTP** — hoy todo en modo `console` |
 | 🟡 Media | **Profit Plus**: implementar `SqlServerConnector` cuando llegue el `.md` del cliente (requisitos en `docs/integracion-profit-plus.md`) |

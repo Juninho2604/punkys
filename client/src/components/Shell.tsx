@@ -1,8 +1,9 @@
 import { createContext, useCallback, useContext, useEffect, useState } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { Bell, CheckCircle, FileText, LayoutGrid, LogOut, Menu, Palette, ChevronLeft, Search, Truck } from 'lucide-react'
+import { Bell, CheckCircle, FileText, KeyRound, LayoutGrid, LogOut, Menu, Palette, ChevronLeft, Search, Truck, Users } from 'lucide-react'
 import { ROL_LABEL, useAuth } from '../lib/auth'
 import { api } from '../lib/api'
+import { useToast } from '../lib/toast'
 import { iniciales } from '../lib/format'
 import type { Rol } from '../lib/types'
 
@@ -30,14 +31,19 @@ const TITULOS: Record<string, string> = {
   '/cotizacion': 'Cotización',
   '/aprobaciones': 'Aprobaciones',
   '/despacho': 'Despacho',
+  '/usuarios': 'Usuarios',
   '/sistema-diseno': 'Sistema de Diseño',
 }
 
 export function Shell() {
   const { user, logout } = useAuth()
+  const toast = useToast()
   const [collapsed, setCollapsed] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
   const [pendCount, setPendCount] = useState(0)
+  const [cambiandoClave, setCambiandoClave] = useState(false)
+  const [clave, setClave] = useState({ actual: '', nueva: '', repetir: '' })
+  const [ocupado, setOcupado] = useState(false)
   const location = useLocation()
   const navigate = useNavigate()
 
@@ -85,6 +91,10 @@ export function Shell() {
             {user.rol === 'admin' && (
               <>
                 <div className="sidebar-divider" />
+                <NavLink to="/usuarios" className={({ isActive }) => `sidebar-item${isActive ? ' active' : ''}`}>
+                  <Users size={19} strokeWidth={2.2} />
+                  {!collapsed && <span className="label">Usuarios</span>}
+                </NavLink>
                 <NavLink to="/sistema-diseno" className={({ isActive }) => `sidebar-item${isActive ? ' active' : ''}`}>
                   <Palette size={19} strokeWidth={2.2} />
                   {!collapsed && <span className="label">Sistema de Diseño</span>}
@@ -128,6 +138,9 @@ export function Shell() {
                 <div style={{ font: "800 13.5px var(--font-ui)", color: 'var(--ink-900)', lineHeight: 1.2 }}>{user.nombre}</div>
                 <div style={{ font: "700 11px var(--font-ui)", color: 'var(--ink-500)' }}>{ROL_LABEL[user.rol]}</div>
               </div>
+              <button className="header-logout" title="Cambiar mi contraseña" onClick={() => setCambiandoClave(true)}>
+                <KeyRound size={16} strokeWidth={2.4} />
+              </button>
               <button className="header-logout" title="Cerrar sesión" onClick={logout}>
                 <LogOut size={17} strokeWidth={2.4} />
               </button>
@@ -137,6 +150,51 @@ export function Shell() {
             <Outlet />
           </main>
         </div>
+
+        {cambiandoClave && (
+          <div className="modal-backdrop" onClick={() => setCambiandoClave(false)}>
+            <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+              <h3>Cambiar mi contraseña</h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                <div className="field">
+                  <label className="field-label">Contraseña actual</label>
+                  <input className="input-text" type="password" value={clave.actual} onChange={(e) => setClave({ ...clave, actual: e.target.value })} autoComplete="current-password" />
+                </div>
+                <div className="field">
+                  <label className="field-label">Nueva contraseña (mín. 8)</label>
+                  <input className="input-text" type="password" value={clave.nueva} onChange={(e) => setClave({ ...clave, nueva: e.target.value })} autoComplete="new-password" />
+                </div>
+                <div className="field">
+                  <label className="field-label">Repetir nueva contraseña</label>
+                  <input className="input-text" type="password" value={clave.repetir} onChange={(e) => setClave({ ...clave, repetir: e.target.value })} autoComplete="new-password" />
+                  {clave.repetir.length > 0 && clave.repetir !== clave.nueva && <div className="field-error">No coincide con la nueva contraseña</div>}
+                </div>
+                <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 6 }}>
+                  <button className="btn btn-secondary" onClick={() => setCambiandoClave(false)}>Cancelar</button>
+                  <button
+                    className="btn btn-primary"
+                    disabled={ocupado || clave.nueva.length < 8 || clave.nueva !== clave.repetir || !clave.actual}
+                    onClick={async () => {
+                      setOcupado(true)
+                      try {
+                        await api.post('/users/me/password', { actual: clave.actual, nueva: clave.nueva })
+                        toast('Contraseña actualizada ✓')
+                        setCambiandoClave(false)
+                        setClave({ actual: '', nueva: '', repetir: '' })
+                      } catch (err) {
+                        toast(err instanceof Error ? err.message : 'No se pudo cambiar')
+                      } finally {
+                        setOcupado(false)
+                      }
+                    }}
+                  >
+                    Cambiar
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </PendCtx.Provider>
   )

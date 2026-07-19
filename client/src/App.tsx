@@ -11,6 +11,7 @@ import { DespachoDetalle } from './pages/DespachoDetalle'
 import { DesignSystem } from './pages/DesignSystem'
 import { TvBoard } from './pages/TvBoard'
 import { ImprimirCotizacion } from './pages/ImprimirCotizacion'
+import { Usuarios } from './pages/Usuarios'
 import type { Rol } from './lib/types'
 
 function Protegida({ roles, children }: { roles?: Rol[]; children: React.ReactNode }) {
@@ -43,6 +44,7 @@ function Rutas() {
         <Route path="/aprobaciones" element={<Protegida roles={['cxc']}><Aprobaciones /></Protegida>} />
         <Route path="/despacho" element={<Protegida roles={['vendedor', 'despacho']}><Despacho /></Protegida>} />
         <Route path="/despacho/:id" element={<Protegida roles={['vendedor', 'despacho']}><DespachoDetalle /></Protegida>} />
+        <Route path="/usuarios" element={<Protegida roles={[]}><Usuarios /></Protegida>} />
         <Route path="/sistema-diseno" element={<Protegida roles={[]}><DesignSystem /></Protegida>} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
