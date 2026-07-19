@@ -82,7 +82,10 @@ del punto 4. Debe imprimir `Sync intranet -> OK: N productos subidos`.
 
 ## Futuro
 
-- Datasets adicionales por el mismo puente: `cxc` (saldos para el aprobador),
-  `ventas` (BI Fase 4), `clientes` (autocompletar por RIF). El endpoint y el
-  `sync_log` ya están diseñados para distinguir datasets.
+- Datasets ya soportados: `productos` (inventario), `cxc` (saldos — `sync_cxc.py`),
+  `ventas` (BI — `sync_ventas.py`). Falta añadir sus llamadas al
+  `actualizar-datos.ps1` igual que inventario. Futuro: `clientes`.
+- ⚠️ El cruce CxC↔cotización es por **nombre de cliente normalizado** (la CxC de
+  Profit no trae RIF). Exacto-o-nada a propósito. Si el export llegara a incluir
+  RIF, migrar el cruce a RIF.
 - Modo `sqlserver` (lectura directa) reemplaza al puente sin tocar la UI.

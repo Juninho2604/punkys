@@ -199,6 +199,14 @@ Las migraciones se aplican **solas** al arrancar el contenedor `server`.
     buscador mobile-first, hoja imprimible por renglones, kanban/dashboard/TV y
     plantillas de notificación adaptados. La hoja imprimible ahora es por renglones
     (con fallback al modelo viejo para históricas).
+13. **BI de ventas + CxC (Fase 4)**: por el mismo puente entran `cxc` (saldos por
+    documento) y `ventas` (agregado mes×vendedor×categoría con margen). **CxC visible
+    al aprobar**: cada cotización pendiente muestra el saldo del cliente (cruce por
+    nombre normalizado, exacto o nada — lección heredada) con alerta ámbar/roja si hay
+    vencido. Página **Cuentas por Cobrar** (cxc/admin) y **Ventas Analítica** (solo
+    admin, con margen; el margen se filtra en el servidor para no-admin). Endpoints
+    `/api/sync/cxc`, `/api/sync/ventas`, `/api/cxc`, `/api/ventas/resumen`; scripts
+    `sync_cxc.py` y `sync_ventas.py`.
 12. **Etapa de Facturación (Fase 3)**: flujo real CxC → Facturación → Despacho.
     Aprobar YA NO crea el envío: notifica al equipo de facturación; la página
     Facturación registra el nº de factura de Profit (único, validado) y AHÍ nace
