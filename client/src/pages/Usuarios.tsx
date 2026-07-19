@@ -13,7 +13,7 @@ interface UserAdmin extends User {
   activo: boolean
 }
 
-const ROLES: Rol[] = ['vendedor', 'cxc', 'despacho', 'admin']
+const ROLES: Rol[] = ['vendedor', 'cxc', 'facturacion', 'despacho', 'admin']
 
 export function Usuarios() {
   const { user: yo } = useAuth()

@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useState } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { Bell, CheckCircle, FileText, KeyRound, LayoutGrid, LogOut, Menu, Palette, ChevronLeft, Search, Truck, Users } from 'lucide-react'
+import { Bell, CheckCircle, FileText, KeyRound, LayoutGrid, LogOut, Menu, Palette, ChevronLeft, ReceiptText, Search, Truck, Users } from 'lucide-react'
 import { ROL_LABEL, useAuth } from '../lib/auth'
 import { api } from '../lib/api'
 import { useToast } from '../lib/toast'
@@ -8,7 +8,7 @@ import { iniciales } from '../lib/format'
 import type { Rol } from '../lib/types'
 
 // Contexto para refrescar el contador de pendientes del sidebar tras aprobar/rechazar
-const PendCtx = createContext<{ pendCount: number; refreshPend: () => void }>({ pendCount: 0, refreshPend: () => {} })
+const PendCtx = createContext<{ pendCount: number; factCount: number; refreshPend: () => void }>({ pendCount: 0, factCount: 0, refreshPend: () => {} })
 export const usePend = () => useContext(PendCtx)
 
 interface NavItem {
@@ -16,13 +16,14 @@ interface NavItem {
   label: string
   icon: typeof LayoutGrid
   roles: Rol[]
-  badge?: boolean
+  badge?: 'pend' | 'fact'
 }
 
 const NAV: NavItem[] = [
-  { to: '/', label: 'Dashboard', icon: LayoutGrid, roles: ['vendedor', 'cxc', 'despacho', 'admin'] },
+  { to: '/', label: 'Dashboard', icon: LayoutGrid, roles: ['vendedor', 'cxc', 'facturacion', 'despacho', 'admin'] },
   { to: '/cotizacion', label: 'Cotización', icon: FileText, roles: ['vendedor', 'admin'] },
-  { to: '/aprobaciones', label: 'Aprobaciones', icon: CheckCircle, roles: ['cxc', 'admin'], badge: true },
+  { to: '/aprobaciones', label: 'Aprobaciones', icon: CheckCircle, roles: ['cxc', 'admin'], badge: 'pend' },
+  { to: '/facturacion', label: 'Facturación', icon: ReceiptText, roles: ['facturacion', 'admin'], badge: 'fact' },
   { to: '/despacho', label: 'Despacho', icon: Truck, roles: ['vendedor', 'despacho', 'admin'] },
 ]
 
@@ -30,6 +31,7 @@ const TITULOS: Record<string, string> = {
   '/': 'Dashboard',
   '/cotizacion': 'Cotización',
   '/aprobaciones': 'Aprobaciones',
+  '/facturacion': 'Facturación',
   '/despacho': 'Despacho',
   '/usuarios': 'Usuarios',
   '/sistema-diseno': 'Sistema de Diseño',
@@ -41,6 +43,7 @@ export function Shell() {
   const [collapsed, setCollapsed] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
   const [pendCount, setPendCount] = useState(0)
+  const [factCount, setFactCount] = useState(0)
   const [cambiandoClave, setCambiandoClave] = useState(false)
   const [clave, setClave] = useState({ actual: '', nueva: '', repetir: '' })
   const [ocupado, setOcupado] = useState(false)
@@ -51,6 +54,10 @@ export function Shell() {
     api
       .get<{ quotes: unknown[] }>('/quotes?estado=pendiente')
       .then((r) => setPendCount(r.quotes.length))
+      .catch(() => {})
+    api
+      .get<{ quotes: unknown[] }>('/quotes?estado=aprobada')
+      .then((r) => setFactCount(r.quotes.length))
       .catch(() => {})
   }, [])
 
@@ -65,7 +72,7 @@ export function Shell() {
   const titulo = TITULOS[seccion] ?? 'Dashboard'
 
   return (
-    <PendCtx.Provider value={{ pendCount, refreshPend }}>
+    <PendCtx.Provider value={{ pendCount, factCount, refreshPend }}>
       <div className="shell">
         {mobileOpen && <div className="sidebar-backdrop" onClick={() => setMobileOpen(false)} />}
         <aside className={`sidebar${collapsed ? ' collapsed' : ''}${mobileOpen ? ' mobile-open' : ''}`}>
@@ -83,7 +90,8 @@ export function Shell() {
                 {!collapsed && (
                   <span className="label">
                     {n.label}
-                    {n.badge && pendCount > 0 && <span className="sidebar-count">{pendCount}</span>}
+                    {n.badge === 'pend' && pendCount > 0 && <span className="sidebar-count">{pendCount}</span>}
+                    {n.badge === 'fact' && factCount > 0 && <span className="sidebar-count">{factCount}</span>}
                   </span>
                 )}
               </NavLink>

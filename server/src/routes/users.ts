@@ -13,7 +13,7 @@ import { HttpError } from '../middleware/errors.js'
 export const usersRouter = Router()
 usersRouter.use(requireAuth)
 
-const ROLES = ['vendedor', 'cxc', 'despacho', 'admin'] as const
+const ROLES = ['vendedor', 'cxc', 'facturacion', 'despacho', 'admin'] as const
 
 const emailSchema = z.string().trim().toLowerCase().email('Email inválido')
 const passwordSchema = z.string().min(8, 'La contraseña debe tener al menos 8 caracteres').max(100)

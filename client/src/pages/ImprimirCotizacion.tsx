@@ -78,6 +78,9 @@ export function ImprimirCotizacion() {
               <tr><td>Nº de cotización:</td><td><strong>{quote.numero}</strong></td></tr>
               <tr><td>Fecha de emisión:</td><td>{emitida}</td></tr>
               <tr><td>Vendedor:</td><td>{quote.vendedor ?? '—'}</td></tr>
+              {quote.factura_numero && (
+                <tr><td>Nº de factura:</td><td><strong>{quote.factura_numero}</strong></td></tr>
+              )}
             </tbody>
           </table>
         </div>

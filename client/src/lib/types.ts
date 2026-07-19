@@ -1,4 +1,4 @@
-export type Rol = 'vendedor' | 'cxc' | 'despacho' | 'admin'
+export type Rol = 'vendedor' | 'cxc' | 'facturacion' | 'despacho' | 'admin'
 
 export interface User {
   id: number
@@ -45,7 +45,9 @@ export interface Quote {
   subtotal: string
   iva: string
   total: string
-  estado: 'generada' | 'pendiente' | 'aprobada' | 'rechazada'
+  estado: 'generada' | 'pendiente' | 'aprobada' | 'facturada' | 'rechazada'
+  factura_numero?: string | null
+  facturada_at?: string | null
   motivo_rechazo: string | null
   pp_sync_status: string
   pp_external_ref: string | null

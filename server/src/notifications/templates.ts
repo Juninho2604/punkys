@@ -72,6 +72,38 @@ export const templates = {
     ].join('\n')
   },
 
+  cotizacionPorFacturar(q: QuoteInfo) {
+    const subject = `Cotización aprobada por facturar · ${q.numero}`
+    const text = [
+      `Hola, Cuentas por Cobrar aprobó una cotización y está lista para facturarse en Profit.`,
+      ``,
+      `Cotización: ${q.numero}`,
+      `Cliente: ${q.razonSocial}`,
+      `Pedido: ${q.resumen}`,
+      `Total: ${fmtBs(q.total)}`,
+      ``,
+      `Emite la factura en Profit y registra el número en la intranet → Facturación.`,
+      ``,
+      pie,
+    ].join('\n')
+    return { subject, text }
+  },
+
+  facturaEmitidaCliente(q: QuoteInfo, facturaNumero: string) {
+    const subject = `Factura ${facturaNumero} emitida · ${q.numero}`
+    const text = [
+      `Hola${q.contacto ? ` ${q.contacto}` : ''},`,
+      ``,
+      `Tu pedido ${q.numero} ya tiene factura emitida: Nº ${facturaNumero}.`,
+      `Total: ${fmtBs(q.total)}`,
+      ``,
+      `El despacho está en preparación; te avisaremos en cada etapa del envío.`,
+      ``,
+      pie,
+    ].join('\n')
+    return { subject, text }
+  },
+
   cotizacionResueltaVendedor(q: QuoteInfo, aprobada: boolean) {
     const subject = aprobada
       ? `Cotización ${q.numero} aprobada por Cuentas por Cobrar ✓`

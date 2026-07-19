@@ -44,7 +44,9 @@ export function Aprobaciones() {
       </div>
       <div className="kanban-grid">
         {COLUMNAS.map((col) => {
-          const items = quotes.filter((q) => q.estado === col.estado)
+          const items = quotes.filter((q) =>
+            col.estado === 'aprobada' ? q.estado === 'aprobada' || q.estado === 'facturada' : q.estado === col.estado,
+          )
           return (
             <div key={col.estado} className="kanban-col">
               <div className="kanban-col-head">
@@ -80,7 +82,9 @@ export function Aprobaciones() {
                     {q.estado === 'rechazada' && q.motivo_rechazo && (
                       <div className="caption" style={{ color: 'var(--danger-500)' }}>{q.motivo_rechazo}</div>
                     )}
-                    {q.estado === 'pendiente' ? (
+                    {q.estado === 'facturada' ? (
+                      <span className="caption">🧾 Factura Nº {q.factura_numero} · en despacho</span>
+                    ) : q.estado === 'pendiente' ? (
                       <div style={{ display: 'flex', gap: 8, marginTop: 4, paddingTop: 10, borderTop: '1px solid var(--line-soft)' }}>
                         <button className="btn-approve-soft" onClick={() => accion(q, 'approve')}>✓ Aprobar</button>
                         <button className="btn-reject-soft" onClick={() => accion(q, 'reject')}>✕ Rechazar</button>

@@ -12,6 +12,7 @@ import { DesignSystem } from './pages/DesignSystem'
 import { TvBoard } from './pages/TvBoard'
 import { ImprimirCotizacion } from './pages/ImprimirCotizacion'
 import { Usuarios } from './pages/Usuarios'
+import { Facturacion } from './pages/Facturacion'
 import type { Rol } from './lib/types'
 
 function Protegida({ roles, children }: { roles?: Rol[]; children: React.ReactNode }) {
@@ -42,6 +43,7 @@ function Rutas() {
         <Route path="/" element={<Dashboard />} />
         <Route path="/cotizacion" element={<Protegida roles={['vendedor']}><Cotizacion /></Protegida>} />
         <Route path="/aprobaciones" element={<Protegida roles={['cxc']}><Aprobaciones /></Protegida>} />
+        <Route path="/facturacion" element={<Protegida roles={['facturacion']}><Facturacion /></Protegida>} />
         <Route path="/despacho" element={<Protegida roles={['vendedor', 'despacho']}><Despacho /></Protegida>} />
         <Route path="/despacho/:id" element={<Protegida roles={['vendedor', 'despacho']}><DespachoDetalle /></Protegida>} />
         <Route path="/usuarios" element={<Protegida roles={[]}><Usuarios /></Protegida>} />

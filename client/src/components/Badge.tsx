@@ -8,6 +8,7 @@ const COLORES: Record<string, { bg: string; fg: string }> = {
   Rechazado: { bg: 'var(--danger-soft)', fg: 'var(--danger-500)' },
   Rechazada: { bg: 'var(--danger-soft)', fg: 'var(--danger-500)' },
   Incidencia: { bg: 'var(--danger-soft)', fg: 'var(--danger-500)' },
+  Facturada: { bg: 'var(--info-soft)', fg: 'var(--info-fg)' },
   'En tránsito': { bg: 'var(--info-soft)', fg: 'var(--info-fg)' },
   Preparando: { bg: 'var(--neutral-soft)', fg: 'var(--neutral-fg)' },
 }

@@ -3,7 +3,7 @@ import { z } from 'zod'
 import { db } from '../db/knex.js'
 import { requireAuth, requireRole } from '../middleware/auth.js'
 import { SERVICIOS, IVA_RATE, SEGURO_RATE } from '../services/pricing.js'
-import { crearCotizacion, enviarAAprobacion, decidirCotizacion, devolverAPendiente } from '../services/workflow.js'
+import { crearCotizacion, enviarAAprobacion, decidirCotizacion, devolverAPendiente, facturarCotizacion } from '../services/workflow.js'
 
 export const quotesRouter = Router()
 quotesRouter.use(requireAuth)
@@ -118,6 +118,21 @@ quotesRouter.post('/:id/reject', requireRole('cxc'), async (req, res, next) => {
   try {
     const motivo = typeof req.body?.motivo === 'string' ? req.body.motivo : undefined
     const result = await decidirCotizacion(Number(req.params.id), 'rechazada', req.user!, motivo)
+    res.json(result)
+  } catch (err) {
+    next(err)
+  }
+})
+
+quotesRouter.post('/:id/facturar', requireRole('facturacion'), async (req, res, next) => {
+  try {
+    const facturaNumero = z
+      .string()
+      .trim()
+      .min(1, 'Indica el número de factura')
+      .max(40)
+      .parse(req.body?.facturaNumero)
+    const result = await facturarCotizacion(Number(req.params.id), facturaNumero, req.user!)
     res.json(result)
   } catch (err) {
     next(err)

@@ -1478,9 +1478,9 @@ textarea::placeholder {
 .tv-funnel {
   flex: 1;
   display: grid;
-  grid-template-columns: 1fr auto 1fr auto 1fr auto 1fr;
+  grid-template-columns: 1fr auto 1fr auto 1fr auto 1fr auto 1fr;
   align-items: stretch;
-  gap: 18px;
+  gap: 14px;
 }
 
 .tv-funnel .tv-kpi {

@@ -19,6 +19,8 @@ interface Board {
     montoAprobadoMes: number
     aprobadasMes: number
     rechazadasMes: number
+    porFacturar: number
+    facturadasMes: number
     porAprobar: number
     montoPorAprobar: number
     enviosActivos: number
@@ -322,6 +324,7 @@ function EscenaEmbudo({ board }: { board: Board }) {
   const pasos = [
     { label: 'Cotizado', valor: kpis.cotizacionesMes, detalle: fmtBs(kpis.montoCotizadoMes), hint: 'este mes' },
     { label: 'Aprobado', valor: kpis.aprobadasMes, detalle: fmtBs(kpis.montoAprobadoMes), hint: 'este mes', tono: 'ok' },
+    { label: 'Facturado', valor: kpis.facturadasMes, detalle: kpis.porFacturar > 0 ? `${kpis.porFacturar} en cola` : 'cola vacía ✓', hint: 'este mes', tono: kpis.porFacturar > 0 ? 'warn' : 'ok' },
     { label: 'En despacho', valor: kpis.enviosActivos, detalle: `${kpis.incidencias} incidencia${kpis.incidencias === 1 ? '' : 's'}`, hint: 'ahora mismo', tono: kpis.incidencias > 0 ? 'bad' : undefined },
     { label: 'Entregado', valor: kpis.entregadosMes, detalle: `${kpis.entregasATiempo}% a tiempo`, hint: 'este mes', tono: 'ok' },
   ]

@@ -31,11 +31,13 @@ async function main() {
       { nombre: 'José Punky', email: 'admin@punkypartners.com', password_hash: hash, rol: 'admin', telefono: '+584121000001' },
       { nombre: 'María Salas', email: 'ventas@punkypartners.com', password_hash: hash, rol: 'vendedor', telefono: '+584121000002' },
       { nombre: 'Carla Rivas', email: 'cxc@punkypartners.com', password_hash: hash, rol: 'cxc', telefono: '+584121000003' },
+      { nombre: 'Fabiola Torres', email: 'facturacion@punkypartners.com', password_hash: hash, rol: 'facturacion', telefono: '+584121000005' },
       { nombre: 'Luis Mora', email: 'despacho@punkypartners.com', password_hash: hash, rol: 'despacho', telefono: '+584121000004' },
     ])
     .returning('*')
   const vendedor = usersRows.find((u) => u.rol === 'vendedor')!
   const cxc = usersRows.find((u) => u.rol === 'cxc')!
+  const factUser = usersRows.find((u) => u.rol === 'facturacion')!
 
   const clientsRows = await db('clients')
     .insert([
@@ -64,19 +66,20 @@ async function main() {
     destinoCiudad: string
     destinoDireccion: string
     items: { codigo: string; cantidad: number }[]
-    estado: 'pendiente' | 'aprobada' | 'rechazada'
+    estado: 'pendiente' | 'aprobada' | 'facturada' | 'rechazada'
     creada: Date
     motivo?: string
+    factura?: string
   }
 
   const quotesSeed: QSeed[] = [
-    { numero: 'COT-0450', clientIdx: 2, origen: 'Almacén Boleíta', destinoCiudad: 'Barcelona', destinoDireccion: 'Av. Intercomunal, C.C. Plaza Mayor, Nivel 2', items: [{ codigo: 'ALI-001', cantidad: 10 }, { codigo: 'ARE-001', cantidad: 20 }], estado: 'aprobada', creada: hace(12) },
+    { numero: 'COT-0450', clientIdx: 2, origen: 'Almacén Boleíta', destinoCiudad: 'Barcelona', destinoDireccion: 'Av. Intercomunal, C.C. Plaza Mayor, Nivel 2', items: [{ codigo: 'ALI-001', cantidad: 10 }, { codigo: 'ARE-001', cantidad: 20 }], estado: 'facturada', factura: '00018790', creada: hace(12) },
     { numero: 'COT-0451', clientIdx: 4, origen: 'Almacén Boleíta', destinoCiudad: 'San Cristóbal', destinoDireccion: 'Av. Libertador, Local 8', items: [{ codigo: 'ALI-002', cantidad: 15 }, { codigo: 'JUG-001', cantidad: 40 }], estado: 'rechazada', creada: hace(10), motivo: 'Cliente con facturas vencidas por conciliar' },
-    { numero: 'COT-0452', clientIdx: 0, origen: 'Almacén Boleíta', destinoCiudad: 'Maracay', destinoDireccion: 'Av. Bolívar Este, Galpón 12', items: [{ codigo: 'ALI-001', cantidad: 12 }, { codigo: 'HIG-001', cantidad: 8 }], estado: 'aprobada', creada: hace(9) },
-    { numero: 'COT-0453', clientIdx: 1, origen: 'Almacén Principal', destinoCiudad: 'Caracas', destinoDireccion: 'Av. San Juan Bosco, Altamira, Torre Clínica PB', items: [{ codigo: 'HIG-001', cantidad: 10 }, { codigo: 'ALI-003', cantidad: 6 }], estado: 'aprobada', creada: hace(7) },
-    { numero: 'COT-0454', clientIdx: 3, origen: 'Almacén Principal', destinoCiudad: 'Maracaibo', destinoDireccion: 'Zona Industrial Sur, Calle 149', items: [{ codigo: 'ALI-001', cantidad: 25 }, { codigo: 'ALI-003', cantidad: 12 }, { codigo: 'ARE-001', cantidad: 30 }], estado: 'aprobada', creada: hace(6) },
-    { numero: 'COT-0455', clientIdx: 4, origen: 'Almacén Principal', destinoCiudad: 'Guacara', destinoDireccion: 'C.C. Guacara Plaza, Local 34', items: [{ codigo: 'ACC-003', cantidad: 4 }, { codigo: 'ACC-001', cantidad: 15 }], estado: 'aprobada', creada: hace(4) },
-    { numero: 'COT-0456', clientIdx: 2, origen: 'Almacén Boleíta', destinoCiudad: 'Puerto La Cruz', destinoDireccion: 'Av. Municipal, Edif. Costa Azul, PB', items: [{ codigo: 'ALI-002', cantidad: 10 }, { codigo: 'ACC-002', cantidad: 5 }], estado: 'pendiente', creada: hace(2) },
+    { numero: 'COT-0452', clientIdx: 0, origen: 'Almacén Boleíta', destinoCiudad: 'Maracay', destinoDireccion: 'Av. Bolívar Este, Galpón 12', items: [{ codigo: 'ALI-001', cantidad: 12 }, { codigo: 'HIG-001', cantidad: 8 }], estado: 'facturada', factura: '00018812', creada: hace(9) },
+    { numero: 'COT-0453', clientIdx: 1, origen: 'Almacén Principal', destinoCiudad: 'Caracas', destinoDireccion: 'Av. San Juan Bosco, Altamira, Torre Clínica PB', items: [{ codigo: 'HIG-001', cantidad: 10 }, { codigo: 'ALI-003', cantidad: 6 }], estado: 'facturada', factura: '00018827', creada: hace(7) },
+    { numero: 'COT-0454', clientIdx: 3, origen: 'Almacén Principal', destinoCiudad: 'Maracaibo', destinoDireccion: 'Zona Industrial Sur, Calle 149', items: [{ codigo: 'ALI-001', cantidad: 25 }, { codigo: 'ALI-003', cantidad: 12 }, { codigo: 'ARE-001', cantidad: 30 }], estado: 'facturada', factura: '00018831', creada: hace(6) },
+    { numero: 'COT-0455', clientIdx: 4, origen: 'Almacén Principal', destinoCiudad: 'Guacara', destinoDireccion: 'C.C. Guacara Plaza, Local 34', items: [{ codigo: 'ACC-003', cantidad: 4 }, { codigo: 'ACC-001', cantidad: 15 }], estado: 'facturada', factura: '00018844', creada: hace(4) },
+    { numero: 'COT-0456', clientIdx: 2, origen: 'Almacén Boleíta', destinoCiudad: 'Puerto La Cruz', destinoDireccion: 'Av. Municipal, Edif. Costa Azul, PB', items: [{ codigo: 'ALI-002', cantidad: 10 }, { codigo: 'ACC-002', cantidad: 5 }], estado: 'aprobada', creada: hace(2) },
     { numero: 'COT-0457', clientIdx: 1, origen: 'Almacén Principal', destinoCiudad: 'Caracas', destinoDireccion: 'Av. San Juan Bosco, Altamira, Torre Clínica PB', items: [{ codigo: 'ALI-004', cantidad: 8 }, { codigo: 'ACU-001', cantidad: 12 }], estado: 'pendiente', creada: hace(1) },
     { numero: 'COT-0458', clientIdx: 0, origen: 'Almacén Principal', destinoCiudad: 'Valencia', destinoDireccion: 'Zona Industrial Municipal Norte, Galpón 7', items: [{ codigo: 'ALI-001', cantidad: 8 }, { codigo: 'ARE-001', cantidad: 15 }], estado: 'pendiente', creada: hace(0, 5) },
   ]
@@ -111,6 +114,9 @@ async function main() {
         created_by: vendedor.id,
         decided_by: decidida ? cxc.id : null,
         decided_at: decidida ? hace(0, 20) : null,
+        factura_numero: q.factura ?? null,
+        facturada_at: q.estado === 'facturada' ? hace(0, 12) : null,
+        facturada_by: q.estado === 'facturada' ? factUser.id : null,
         motivo_rechazo: q.motivo ?? null,
         pp_sync_status: 'simulado',
         pp_external_ref: `PP-SIM-${q.numero}`,

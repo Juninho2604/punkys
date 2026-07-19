@@ -199,9 +199,7 @@ export async function decidirCotizacion(
   const items = await itemsDe(quoteId)
   const info = quoteInfo(updated, vendedor?.nombre ?? 'equipo de ventas', items)
 
-  let shipment: any = null
   if (decision === 'aprobada') {
-    shipment = await crearEnvioDesdeCotizacion(updated, client, items)
     // Cliente: email (si lo tenemos) + WhatsApp al teléfono de contacto
     if (client?.email) {
       const m = templates.cotizacionAprobadaCliente(info)
@@ -214,18 +212,11 @@ export async function decidirCotizacion(
         ref: updated.numero,
       })
     }
-    // Equipo de despacho
-    const sInfo: ShipmentInfo = {
-      numero: shipment.numero,
-      cliente: shipment.cliente,
-      estado: shipment.estado,
-      eta: shipment.eta,
-      destinoCiudad: shipment.destino_ciudad,
-    }
-    const md = templates.despachoNuevo(sInfo, info)
-    const despachoUsers = await db('users').where({ rol: 'despacho', activo: true })
-    for (const u of despachoUsers) {
-      await notifier.email(u.email, md.subject, md.text, { evento: 'despacho_nuevo', ref: shipment.numero })
+    // Etapa siguiente del flujo real: FACTURACIÓN (emite la factura en Profit)
+    const factUsers = await db('users').where({ rol: 'facturacion', activo: true })
+    const mf = templates.cotizacionPorFacturar(info)
+    for (const u of factUsers) {
+      await notifier.email(u.email, mf.subject, mf.text, { evento: 'por_facturar', ref: updated.numero })
     }
   }
 
@@ -238,15 +229,70 @@ export async function decidirCotizacion(
     })
   }
 
+  return { quote: updated, shipment: null }
+}
+
+// Facturación registra el número de factura emitida en Profit; recién ahí
+// nace la orden de despacho (flujo real: CxC → Facturación → Logística).
+export async function facturarCotizacion(quoteId: number, facturaNumero: string, user: AuthUser) {
+  const quote = await db('quotes').where({ id: quoteId }).first()
+  if (!quote) throw new HttpError(404, 'Cotización no encontrada')
+  if (quote.estado !== 'aprobada')
+    throw new HttpError(409, `Solo se facturan cotizaciones aprobadas (estado actual: "${quote.estado}")`)
+
+  const duplicada = await db('quotes').where({ factura_numero: facturaNumero }).whereNot({ id: quoteId }).first()
+  if (duplicada) throw new HttpError(409, `La factura ${facturaNumero} ya está registrada en ${duplicada.numero}`)
+
+  const [updated] = await db('quotes')
+    .where({ id: quoteId })
+    .update({
+      estado: 'facturada',
+      factura_numero: facturaNumero,
+      facturada_at: db.fn.now(),
+      facturada_by: user.id,
+      updated_at: db.fn.now(),
+    })
+    .returning('*')
+
+  const client = quote.client_id ? await db('clients').where({ id: quote.client_id }).first() : null
+  const vendedor = await db('users').where({ id: quote.created_by }).first()
+  const items = await itemsDe(quoteId)
+  const info = quoteInfo(updated, vendedor?.nombre ?? 'equipo de ventas', items)
+
+  const shipment = await crearEnvioDesdeCotizacion(updated, client, items)
+
+  // Cliente: factura emitida (email si lo tenemos)
+  if (client?.email) {
+    const m = templates.facturaEmitidaCliente(info, facturaNumero)
+    await notifier.email(client.email, m.subject, m.text, { evento: 'factura_emitida', ref: updated.numero })
+  }
+  // Equipo de despacho: nueva orden
+  const sInfo: ShipmentInfo = {
+    numero: shipment.numero,
+    cliente: shipment.cliente,
+    estado: shipment.estado,
+    eta: shipment.eta,
+    destinoCiudad: shipment.destino_ciudad,
+  }
+  const md = templates.despachoNuevo(sInfo, info)
+  const despachoUsers = await db('users').where({ rol: 'despacho', activo: true })
+  for (const u of despachoUsers) {
+    await notifier.email(u.email, md.subject, md.text, { evento: 'despacho_nuevo', ref: shipment.numero })
+  }
+
   return { quote: updated, shipment }
 }
 
 export async function devolverAPendiente(quoteId: number) {
   const quote = await db('quotes').where({ id: quoteId }).first()
   if (!quote) throw new HttpError(404, 'Cotización no encontrada')
+  if (quote.estado === 'facturada')
+    throw new HttpError(409, `Ya tiene factura emitida (${quote.factura_numero}); anúlala en Profit antes de devolver la cotización`)
   if (quote.estado !== 'aprobada' && quote.estado !== 'rechazada')
     throw new HttpError(409, 'Solo se pueden devolver cotizaciones aprobadas o rechazadas')
 
+  // Con el flujo de Facturación, una aprobada aún no tiene envío; por si
+  // existiera uno histórico (flujo viejo), se conserva la guarda.
   if (quote.estado === 'aprobada') {
     const shipment = await db('shipments').where({ quote_id: quoteId }).first()
     if (shipment) {

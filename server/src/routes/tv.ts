@@ -26,12 +26,17 @@ tvRouter.get('/board', async (req, res, next) => {
       .where('created_at', '>=', db.raw(`date_trunc('month', now())`))
       .sum('total')
     const [{ sum: montoAprobadoMes }] = await db('quotes')
-      .where('estado', 'aprobada')
+      .whereIn('estado', ['aprobada', 'facturada'])
       .andWhere('decided_at', '>=', db.raw(`date_trunc('month', now())`))
       .sum('total')
     const [{ count: aprobadasMes }] = await db('quotes')
-      .where('estado', 'aprobada')
+      .whereIn('estado', ['aprobada', 'facturada'])
       .andWhere('decided_at', '>=', db.raw(`date_trunc('month', now())`))
+      .count()
+    const [{ count: porFacturar }] = await db('quotes').where('estado', 'aprobada').count()
+    const [{ count: facturadasMes }] = await db('quotes')
+      .where('estado', 'facturada')
+      .andWhere('facturada_at', '>=', db.raw(`date_trunc('month', now())`))
       .count()
     const [{ count: rechazadasMes }] = await db('quotes')
       .where('estado', 'rechazada')
@@ -87,7 +92,7 @@ tvRouter.get('/board', async (req, res, next) => {
     const ultQuotes = await db('quotes')
       .orderBy('updated_at', 'desc')
       .limit(15)
-      .select('numero', 'razon_social', 'total', 'estado', 'created_at', 'decided_at')
+      .select('numero', 'razon_social', 'total', 'estado', 'created_at', 'decided_at', 'factura_numero', 'facturada_at')
     const ultShipments = await db('shipments')
       .orderBy('updated_at', 'desc')
       .limit(15)
@@ -98,8 +103,11 @@ tvRouter.get('/board', async (req, res, next) => {
     for (const q of ultQuotes) {
       eventos.push({ t: q.created_at, texto: `📝 ${q.numero} · ${q.razon_social}` })
       if (q.decided_at) {
-        const emoji = q.estado === 'aprobada' ? '✅' : '⛔'
-        eventos.push({ t: q.decided_at, texto: `${emoji} ${q.numero} ${q.estado} · ${q.razon_social}` })
+        const rechazada = q.estado === 'rechazada'
+        eventos.push({ t: q.decided_at, texto: `${rechazada ? '⛔' : '✅'} ${q.numero} ${rechazada ? 'rechazada' : 'aprobada'} · ${q.razon_social}` })
+      }
+      if (q.facturada_at && q.factura_numero) {
+        eventos.push({ t: q.facturada_at, texto: `🧾 ${q.numero} facturada (Nº ${q.factura_numero}) · ${q.razon_social}` })
       }
     }
     for (const s of ultShipments) {
@@ -117,6 +125,8 @@ tvRouter.get('/board', async (req, res, next) => {
         montoAprobadoMes: Number(montoAprobadoMes ?? 0),
         aprobadasMes: Number(aprobadasMes),
         rechazadasMes: Number(rechazadasMes),
+        porFacturar: Number(porFacturar),
+        facturadasMes: Number(facturadasMes),
         porAprobar: Number(porAprobar),
         montoPorAprobar: Number(montoPorAprobar ?? 0),
         enviosActivos: Number(enviosActivos),

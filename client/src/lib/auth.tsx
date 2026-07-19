@@ -45,6 +45,7 @@ export function useAuth(): AuthCtx {
 export const ROL_LABEL: Record<string, string> = {
   vendedor: 'Ventas',
   cxc: 'Cuentas por Cobrar',
+  facturacion: 'Facturación',
   despacho: 'Despacho',
   admin: 'Owner',
 }
