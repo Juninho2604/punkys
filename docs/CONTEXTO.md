@@ -232,6 +232,14 @@ Las migraciones se aplican **solas** al arrancar el contenedor `server`.
     marcar quincena pagada (snapshot inmutable de base/%/monto + referencia de
     transferencia + quién/cuándo) y deshacer. Si luego cambia el %, los pagos
     registrados no se alteran. Cruce por nombre de vendedor normalizado.
+15. **Compras & CxP (Fase 6 · consultas Profit, lado del gasto)**: datasets
+    `compras` (facturas de compra por documento → `pp_compras`) y `cxp` (deuda a
+    proveedores → `pp_cxp`, espejo de la CxC). Página **Compras & Por Pagar**
+    (solo admin): compras por mes, top proveedores, últimas compras y CxP por
+    proveedor con vencido. `GET /api/compras/resumen`; scripts `sync_compras.py`
+    y `sync_cxp.py` (⚠️ extractores de compras/CxP por confirmar en la PC).
+    Con esto el dueño ve ambas caras: ingreso (ventas/cobranzas/CxC) y gasto
+    (compras/CxP). El "todo Profit en vivo" llegará con el conector sqlserver.
 
 ## 8. Pendientes / roadmap
 

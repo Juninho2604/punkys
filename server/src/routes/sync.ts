@@ -248,6 +248,108 @@ syncRouter.post('/cobranzas', async (req, res, next) => {
   }
 })
 
+// ── Compras por documento (snapshot completo · lado del gasto) ───────────────
+const comprasSchema = z.object({
+  fuente: z.string().trim().max(200).optional(),
+  compras: z
+    .array(
+      z.object({
+        fecha: z.string().trim().regex(/^\d{4}-\d{2}-\d{2}$/, 'fecha debe ser YYYY-MM-DD'),
+        documento: z.string().trim().max(60).optional().default(''),
+        proveedor: z.string().trim().min(1).max(300),
+        categoria: z.string().trim().max(120).optional().default(''),
+        montoUsd: z.number(),
+        moneda: z.string().trim().max(10).optional().default('USD'),
+      }),
+    )
+    .max(50000),
+})
+
+syncRouter.post('/compras', async (req, res, next) => {
+  try {
+    if (!config.syncToken) return void res.status(503).json({ error: 'Ingesta deshabilitada' })
+    if (!tokenValido(req.headers.authorization)) return void res.status(401).json({ error: 'Token inválido' })
+    const { fuente, compras } = comprasSchema.parse(req.body)
+
+    await db.transaction(async (trx) => {
+      await trx('pp_compras').del()
+      if (compras.length) {
+        await trx.batchInsert(
+          'pp_compras',
+          compras.map((c) => ({
+            fecha: c.fecha,
+            documento: c.documento || null,
+            proveedor: c.proveedor,
+            categoria: c.categoria || null,
+            monto_usd: c.montoUsd,
+            moneda: c.moneda,
+          })),
+          500,
+        )
+      }
+      await trx('sync_log').insert({ dataset: 'compras', fuente: fuente ?? null, registros: compras.length })
+    })
+    console.log(`🔄 [Sync] Compras: ${compras.length} documentos · fuente: ${fuente ?? '—'}`)
+    res.json({ ok: true, recibidos: compras.length })
+  } catch (err) {
+    next(err)
+  }
+})
+
+// ── Cuentas por Pagar (snapshot completo por documento) ──────────────────────
+const cxpSchema = z.object({
+  fuente: z.string().trim().max(200).optional(),
+  cuentas: z
+    .array(
+      z.object({
+        proveedor: z.string().trim().min(1).max(300),
+        documento: z.string().trim().max(60).optional().default(''),
+        tipoDoc: z.string().trim().max(40).optional().default(''),
+        fechaEmision: z.string().trim().max(20).optional().default(''),
+        fechaVenc: z.string().trim().max(20).optional().default(''),
+        total: z.number().default(0),
+        saldo: z.number(),
+        diasVencido: z.number().int().default(0),
+        moneda: z.string().trim().max(10).optional().default('USD'),
+      }),
+    )
+    .max(50000),
+})
+
+syncRouter.post('/cxp', async (req, res, next) => {
+  try {
+    if (!config.syncToken) return void res.status(503).json({ error: 'Ingesta deshabilitada' })
+    if (!tokenValido(req.headers.authorization)) return void res.status(401).json({ error: 'Token inválido' })
+    const { fuente, cuentas } = cxpSchema.parse(req.body)
+
+    await db.transaction(async (trx) => {
+      await trx('pp_cxp').del()
+      if (cuentas.length) {
+        await trx.batchInsert(
+          'pp_cxp',
+          cuentas.map((c) => ({
+            proveedor: c.proveedor,
+            documento: c.documento || null,
+            tipo_doc: c.tipoDoc || null,
+            fecha_emision: c.fechaEmision || null,
+            fecha_venc: c.fechaVenc || null,
+            total: c.total,
+            saldo: c.saldo,
+            dias_vencido: c.diasVencido,
+            moneda: c.moneda,
+          })),
+          500,
+        )
+      }
+      await trx('sync_log').insert({ dataset: 'cxp', fuente: fuente ?? null, registros: cuentas.length })
+    })
+    console.log(`🔄 [Sync] CxP: ${cuentas.length} documentos · fuente: ${fuente ?? '—'}`)
+    res.json({ ok: true, recibidos: cuentas.length })
+  } catch (err) {
+    next(err)
+  }
+})
+
 // Estado del puente (para el admin en la intranet)
 syncRouter.get('/estado', requireAuth, requireRole(), async (_req, res, next) => {
   try {
@@ -257,7 +359,11 @@ syncRouter.get('/estado', requireAuth, requireRole(), async (_req, res, next) =>
     const [{ count: cxc }] = await db('pp_cxc').count()
     const [{ count: ventas }] = await db('pp_ventas').count()
     const [{ count: cobranzas }] = await db('pp_cobranzas').count()
+    const [{ count: compras }] = await db('pp_compras').count()
+    const [{ count: cxp }] = await db('pp_cxp').count()
     res.json({
+      documentosCompras: Number(compras),
+      documentosCxp: Number(cxp),
       productosActivos: Number(activos),
       productosTotal: Number(total),
       documentosCxc: Number(cxc),

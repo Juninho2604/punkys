@@ -86,8 +86,12 @@ del punto 4. Debe imprimir `Sync intranet -> OK: N productos subidos`.
   `ventas` (BI — `sync_ventas.py`), `cobranzas` (base de las comisiones —
   `sync_cobranzas.py`, espera `cobranzas-data.json` con fecha/documento/cliente/
   vendedor/montoUsd por cobro; ⚠️ el extractor de cobranzas puede no existir aún
-  en la PC — crearlo igual que el de ventas). Falta añadir sus llamadas al
-  `actualizar-datos.ps1` igual que inventario. Futuro: `clientes`.
+  en la PC — crearlo igual que el de ventas), `compras` (facturas de compra —
+  `sync_compras.py`, `compras-data.json` con fecha/documento/proveedor/categoria/
+  montoUsd) y `cxp` (deuda a proveedores — `sync_cxp.py`, `cxp-data.json`, mismo
+  formato que la CxC pero por proveedor; ⚠️ ambos extractores por confirmar/crear).
+  Falta añadir sus llamadas al `actualizar-datos.ps1` igual que inventario.
+  Futuro: `clientes`.
 - ⚠️ El cruce CxC↔cotización es por **nombre de cliente normalizado** (la CxC de
   Profit no trae RIF). Exacto-o-nada a propósito. Si el export llegara a incluir
   RIF, migrar el cruce a RIF.
