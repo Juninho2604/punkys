@@ -223,6 +223,15 @@ Las migraciones se aplican **solas** al arrancar el contenedor `server`.
     cotiza contra el inventario sincronizado, y `pipeline/sync_inventario.py`
     para la PC del cliente (lee catalogo-activo.json + lista-precios-data.json
     de los extractores existentes). Ver `docs/puente-datos.md`.
+14. **Comisiones (Fase 5)**: comisión de vendedores **sobre lo cobrado** en
+    Profit, corte **quincenal** (1–15 y 16–fin de mes). Dataset nuevo
+    `cobranzas` por documento (`POST /api/sync/cobranzas` + `pp_cobranzas`,
+    script `sync_cobranzas.py`; ⚠️ requiere export de cobranzas en la PC —
+    confirmar fuente con el cliente). El **% es por vendedor** y TODO el módulo
+    es **solo admin** (`/api/comisiones`, página Comisiones): configurar %,
+    marcar quincena pagada (snapshot inmutable de base/%/monto + referencia de
+    transferencia + quién/cuándo) y deshacer. Si luego cambia el %, los pagos
+    registrados no se alteran. Cruce por nombre de vendedor normalizado.
 
 ## 8. Pendientes / roadmap
 

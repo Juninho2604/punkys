@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useState } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { BarChart3, Bell, CheckCircle, FileText, KeyRound, LayoutGrid, LogOut, Menu, Palette, ChevronLeft, ReceiptText, Search, Truck, Users, Wallet } from 'lucide-react'
+import { BarChart3, Bell, CheckCircle, FileText, HandCoins, KeyRound, LayoutGrid, LogOut, Menu, Palette, ChevronLeft, ReceiptText, Search, Truck, Users, Wallet } from 'lucide-react'
 import { ROL_LABEL, useAuth } from '../lib/auth'
 import { api } from '../lib/api'
 import { useToast } from '../lib/toast'
@@ -35,6 +35,7 @@ const TITULOS: Record<string, string> = {
   '/facturacion': 'Facturación',
   '/cuentas-por-cobrar': 'Cuentas por Cobrar',
   '/ventas': 'Ventas Analítica',
+  '/comisiones': 'Comisiones',
   '/despacho': 'Despacho',
   '/usuarios': 'Usuarios',
   '/sistema-diseno': 'Sistema de Diseño',
@@ -105,6 +106,10 @@ export function Shell() {
                 <NavLink to="/ventas" className={({ isActive }) => `sidebar-item${isActive ? ' active' : ''}`}>
                   <BarChart3 size={19} strokeWidth={2.2} />
                   {!collapsed && <span className="label">Ventas Analítica</span>}
+                </NavLink>
+                <NavLink to="/comisiones" className={({ isActive }) => `sidebar-item${isActive ? ' active' : ''}`}>
+                  <HandCoins size={19} strokeWidth={2.2} />
+                  {!collapsed && <span className="label">Comisiones</span>}
                 </NavLink>
                 <NavLink to="/usuarios" className={({ isActive }) => `sidebar-item${isActive ? ' active' : ''}`}>
                   <Users size={19} strokeWidth={2.2} />

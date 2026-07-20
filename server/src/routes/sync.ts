@@ -199,6 +199,55 @@ syncRouter.post('/ventas', async (req, res, next) => {
   }
 })
 
+// ── Cobranzas por documento (snapshot completo · base de las comisiones) ─────
+const cobranzasSchema = z.object({
+  fuente: z.string().trim().max(200).optional(),
+  cobranzas: z
+    .array(
+      z.object({
+        fecha: z.string().trim().regex(/^\d{4}-\d{2}-\d{2}$/, 'fecha debe ser YYYY-MM-DD'),
+        documento: z.string().trim().max(60).optional().default(''),
+        cliente: z.string().trim().max(300).optional().default(''),
+        vendedor: z.string().trim().min(1).max(200),
+        montoUsd: z.number(),
+        moneda: z.string().trim().max(10).optional().default('USD'),
+      }),
+    )
+    .max(50000),
+})
+
+syncRouter.post('/cobranzas', async (req, res, next) => {
+  try {
+    if (!config.syncToken) return void res.status(503).json({ error: 'Ingesta deshabilitada' })
+    if (!tokenValido(req.headers.authorization)) return void res.status(401).json({ error: 'Token inválido' })
+    const { fuente, cobranzas } = cobranzasSchema.parse(req.body)
+
+    await db.transaction(async (trx) => {
+      await trx('pp_cobranzas').del()
+      if (cobranzas.length) {
+        await trx.batchInsert(
+          'pp_cobranzas',
+          cobranzas.map((c) => ({
+            fecha: c.fecha,
+            documento: c.documento || null,
+            cliente: c.cliente || null,
+            vendedor_norm: normalizarNombre(c.vendedor),
+            vendedor: c.vendedor,
+            monto_usd: c.montoUsd,
+            moneda: c.moneda,
+          })),
+          500,
+        )
+      }
+      await trx('sync_log').insert({ dataset: 'cobranzas', fuente: fuente ?? null, registros: cobranzas.length })
+    })
+    console.log(`🔄 [Sync] Cobranzas: ${cobranzas.length} documentos · fuente: ${fuente ?? '—'}`)
+    res.json({ ok: true, recibidos: cobranzas.length })
+  } catch (err) {
+    next(err)
+  }
+})
+
 // Estado del puente (para el admin en la intranet)
 syncRouter.get('/estado', requireAuth, requireRole(), async (_req, res, next) => {
   try {
@@ -207,11 +256,13 @@ syncRouter.get('/estado', requireAuth, requireRole(), async (_req, res, next) =>
     const [{ count: total }] = await db('pp_products').count()
     const [{ count: cxc }] = await db('pp_cxc').count()
     const [{ count: ventas }] = await db('pp_ventas').count()
+    const [{ count: cobranzas }] = await db('pp_cobranzas').count()
     res.json({
       productosActivos: Number(activos),
       productosTotal: Number(total),
       documentosCxc: Number(cxc),
       filasVentas: Number(ventas),
+      documentosCobranzas: Number(cobranzas),
       sincronizaciones: ultimos,
     })
   } catch (err) {

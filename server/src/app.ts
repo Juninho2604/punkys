@@ -14,6 +14,7 @@ import { syncRouter } from './routes/sync.js'
 import { usersRouter } from './routes/users.js'
 import { cxcRouter } from './routes/cxc.js'
 import { ventasRouter } from './routes/ventas.js'
+import { comisionesRouter } from './routes/comisiones.js'
 
 export function createApp() {
   const app = express()
@@ -36,6 +37,7 @@ export function createApp() {
   app.use('/api/users', usersRouter)
   app.use('/api/cxc', cxcRouter)
   app.use('/api/ventas', ventasRouter)
+  app.use('/api/comisiones', comisionesRouter)
 
   app.use(errorHandler)
   return app
