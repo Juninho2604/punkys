@@ -65,6 +65,10 @@ services:
       WA_CLOUD_ACCESS_TOKEN: ${WA_CLOUD_ACCESS_TOKEN:-}
       # Profit Plus 2K12
       PROFIT_PLUS_MODE: ${PROFIT_PLUS_MODE:-simulado}
+      # Modo réplica: lista de precios, tipos de stock y mapeo almacén→sede
+      PP_LISTA: ${PP_LISTA:-001}
+      PP_STOCK_TIPOS: ${PP_STOCK_TIPOS:-}
+      PP_ALMACEN_SEDES: ${PP_ALMACEN_SEDES:-002:Almacén Boleíta,035:Almacén Principal}
       PP_DB_HOST: ${PP_DB_HOST:-}
       PP_DB_PORT: ${PP_DB_PORT:-1433}
       PP_DB_NAME: ${PP_DB_NAME:-}

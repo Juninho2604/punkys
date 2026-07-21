@@ -91,12 +91,38 @@ despachos, catálogos. **Añadido en v2** (⚠️ nombres por confirmar con
 - Cobros (`saCobro`/`saCobroReng`) — base de las Comisiones por quincena.
 - Compras y CxP (`saProveedor`, `saFacturaCompra*`, `saDocumentoCompra`).
 
-## Siguiente fase (nuestra, cuando la réplica esté corriendo)
+## Conector `PROFIT_PLUS_MODE=replica` (CONSTRUIDO · Fase 7)
 
-Conector `PROFIT_PLUS_MODE=replica`: la API lee inventario/precios/CxC/
-cobranzas/ventas/compras directo de `profit.*` — se retiran los extractores
-de Excel y los scripts `pipeline/sync_*.py`, y los datos pasan de 6 corridas
-diarias a cada 10 minutos. Las pantallas no cambian.
+Un materializador (`integrations/profitplus/replica.ts`) traduce `profit.*` →
+tablas `pp_*` al arrancar y **cada 5 minutos**, reutilizando TODOS los módulos
+existentes sin tocar pantallas:
+
+| Origen (réplica) | Destino | Alimenta |
+|---|---|---|
+| saarticulo + sastockalmacen + saartprecio | pp_products | Wizard de cotización (stock y precio por sede) |
+| sadocumentoventa (saldo>0) | pp_cxc | Cuentas por Cobrar + saldo al aprobar |
+| sacobro | pp_cobranzas | Comisiones por quincena |
+| safacturaventa(+reng) | pp_ventas | Ventas Analítica (categoría = co_lin; margen aún NULL) |
+| safacturacompra | pp_compras | Compras & Por Pagar |
+| sadocumentocompra (saldo>0) | pp_cxp | Deuda a proveedores |
+
+Reglas: `trim()` en todo cruce (chars con relleno de Profit); precio vigente =
+`inactivo=false`, `desde<=hoy`, `hasta` nulo/futuro, prefiriendo `PP_LISTA` y
+el `desde` más nuevo; artículos sin precio vigente se excluyen y se cuentan en
+`sync_log.detalle`; montos no-USD se dividen entre `tasa` si viene; cobros sin
+vendedor se excluyen (no comisionan).
+
+Config (`.env` del VPS): `PROFIT_PLUS_MODE=replica`, `PP_LISTA` (default 001),
+`PP_STOCK_TIPOS` (vacío = suma todos los tipos de saStockAlmacen — ⚠️ afinar si
+hay tipos comprometido/tránsito), `PP_ALMACEN_SEDES`
+(default `002:Almacén Boleíta,035:Almacén Principal`).
+
+Refresco manual (admin): `POST /api/sync/replica/refresh`. El estado del
+conector (`GET /api/system/status`) reporta la última corrida de punky-sync y
+alerta si lleva >1h sin sincronizar.
+
+Los scripts `pipeline/sync_*.py` quedan obsoletos con este modo (eran el
+plan B por Excel); no borrar por si acaso, pero ya no se usan.
 
 ## Corrección aplicada sobre la entrega original del técnico (v1 → v2)
 

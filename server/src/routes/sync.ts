@@ -350,6 +350,18 @@ syncRouter.post('/cxp', async (req, res, next) => {
   }
 })
 
+// Refresco manual de la materialización réplica → pp_* (solo admin).
+// Útil tras corregir tables.config.js o para no esperar los 5 minutos.
+syncRouter.post('/replica/refresh', requireAuth, requireRole(), async (_req, res, next) => {
+  try {
+    const { refrescarDesdeReplica } = await import('../integrations/profitplus/replica.js')
+    const resultado = await refrescarDesdeReplica()
+    res.json(resultado)
+  } catch (err) {
+    next(err)
+  }
+})
+
 // Estado del puente (para el admin en la intranet)
 syncRouter.get('/estado', requireAuth, requireRole(), async (_req, res, next) => {
   try {

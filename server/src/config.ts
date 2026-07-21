@@ -48,7 +48,24 @@ export const config = {
   },
 
   profitPlus: {
-    mode: env('PROFIT_PLUS_MODE', 'simulado') as 'simulado' | 'pipeline' | 'sqlserver',
+    mode: env('PROFIT_PLUS_MODE', 'simulado') as 'simulado' | 'pipeline' | 'sqlserver' | 'replica',
+    // Modo réplica (punky-sync → esquema profit → materialización a pp_*)
+    replica: {
+      // Lista de precios de Profit que usa la cotización (co_precio)
+      lista: (process.env.PP_LISTA ?? '001').trim(),
+      // Tipos de stock a sumar de saStockAlmacen (vacío = todos)
+      stockTipos: (process.env.PP_STOCK_TIPOS ?? '')
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean),
+      // Almacenes de Profit expuestos como sedes: "co_alma:Nombre,co_alma:Nombre"
+      sedes: Object.fromEntries(
+        (process.env.PP_ALMACEN_SEDES ?? '002:Almacén Boleíta,035:Almacén Principal')
+          .split(',')
+          .map((par) => par.split(':').map((s) => s.trim()))
+          .filter((par) => par.length === 2 && par[0] && par[1]),
+      ) as Record<string, string>,
+    },
     db: {
       host: process.env.PP_DB_HOST ?? '',
       port: Number(process.env.PP_DB_PORT ?? 1433),

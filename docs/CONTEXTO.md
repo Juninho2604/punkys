@@ -239,6 +239,15 @@ Las migraciones se aplican **solas** al arrancar el contenedor `server`.
     marcar quincena pagada (snapshot inmutable de base/%/monto + referencia de
     transferencia + quién/cuándo) y deshacer. Si luego cambia el %, los pagos
     registrados no se alteran. Cruce por nombre de vendedor normalizado.
+16. **Conector réplica (Fase 7 · Profit EN VIVO)**: `PROFIT_PLUS_MODE=replica`.
+    punky-sync (Node, en el servidor Windows del cliente) replica las tablas de
+    Profit al esquema `profit` del VPS cada 10 min por túnel Cloudflare
+    (`db.punkyintranet.com`, Service Token, SIN WARP); un materializador del
+    server traduce `profit.*` → `pp_*` cada 5 min, alimentando TODOS los
+    módulos sin tocar pantallas: inventario+precios+stock por sede (cotización),
+    CxC, cobros (Comisiones), ventas, compras y CxP. Refresco manual admin:
+    `POST /api/sync/replica/refresh`. Ver `docs/replica-profit.md`. Con esto,
+    los extractores de Excel y `pipeline/sync_*.py` quedan obsoletos.
 15. **Compras & CxP (Fase 6 · consultas Profit, lado del gasto)**: datasets
     `compras` (facturas de compra por documento → `pp_compras`) y `cxp` (deuda a
     proveedores → `pp_cxp`, espejo de la CxC). Página **Compras & Por Pagar**
