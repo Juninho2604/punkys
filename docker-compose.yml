@@ -27,7 +27,11 @@ services:
       interval: 5s
       timeout: 5s
       retries: 12
-    # El puerto NO se expone al host: solo la red interna lo alcanza.
+    # El puerto NUNCA se expone a internet. Por defecto queda solo en
+    # localhost del VPS; para la réplica de Profit se enlaza a la IP privada
+    # del túnel Tailscale con PG_BIND (ver docs/replica-profit.md).
+    ports:
+      - "${PG_BIND:-127.0.0.1}:5432:5432"
 
   server:
     build: ./server
