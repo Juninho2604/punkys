@@ -160,6 +160,13 @@ marino, tipografía a distancia, cursor oculto.
 - **Puerto**: el 80 lo ocupa otro servicio del VPS ("Hermes", agente de IA del
   cliente — **no se toca**). Punky publica en `WEB_PORT` (por defecto **8080**):
   el sitio es `http://80.241.212.7:8080`. Configurable en el `.env` del VPS.
+- **Dominios**: `intranet.punkypartners.com` → registro A en el DNS de Shopify
+  (la tienda del cliente vive en `punkypartners.com`, jamás se toca). Además el
+  desarrollador compró **`punkyintranet.com`** (suyo, en su Cloudflare): será la
+  URL oficial `https://punkyintranet.com` vía Cloudflare Tunnel (HTTPS sin abrir
+  puertos) y el túnel TCP `db.punkyintranet.com` de la réplica de Profit — ver
+  `docs/replica-profit.md`. Al activarlo: `CLIENT_ORIGIN=https://punkyintranet.com`
+  y `COOKIE_SECURE=true` en el `.env`.
 - `.env` de producción (en el VPS, no en git): `POSTGRES_PASSWORD`, `JWT_SECRET`,
   `CLIENT_ORIGIN=http://80.241.212.7:8080`, `WEB_PORT=8080`, `COOKIE_SECURE=false`
   (¡HTTP! — pasar a `true` al activar HTTPS), `TV_ACCESS_KEY`.

@@ -51,24 +51,35 @@ punky-deploy
 Verificar que NO quedó público: `ss -tlnp | grep 5432` debe mostrar solo la
 IP 100.x.y.z (y/o 127.0.0.1), nunca `0.0.0.0`.
 
-## Alternativa de túnel: Cloudflare Zero Trust (en vez de Tailscale)
+## Túnel ELEGIDO: Cloudflare (dominio propio `punkyintranet.com`, SIN WARP)
 
-Mismo principio, más pasos. No requiere mover el dominio (la cuenta Zero
-Trust usa un *team name* propio). Resumen:
-1. VPS: alias interno `ip addr add 10.88.88.1/32 dev lo` (persistir con un
-   servicio systemd antes de docker) y `PG_BIND=10.88.88.1` + `punky-deploy`.
-2. Panel Zero Trust: crear Tunnel (`cloudflared` como servicio en el VPS),
-   ruta *Private Network* `10.88.88.1/32`, activar **Proxy TCP**
-   (Settings → Network) y device enrollment restringido por correo.
-3. **Split Tunnels en modo Include con SOLO `10.88.88.1/32`** — crítico: sin
-   esto, WARP desvía TODO el tráfico del servidor del cliente por Cloudflare.
-4. Windows del cliente: instalar WARP → login Zero Trust → `PG_HOST=10.88.88.1`
-   en el `.env` del punky-sync.
+Decisión final tras el incidente WARP (instalado por error en el VPS, capturó
+la ruta por defecto y tumbó los servicios): se usa Cloudflare Tunnel en modo
+**`cloudflared access` (TCP)** — un ejecutable de espacio de usuario que NO
+toca rutas, DNS ni adaptadores. **WARP no se instala en NINGÚN servidor.**
 
-Tercera opción sin terceros: WireGuard puro entre ambos servidores (un solo
-puerto UDP en el VPS). Cualquiera de los tres túneles sirve: `PG_BIND` acepta
-la IP privada del que se use, y el resto (usuario enjaulado, esquema profit,
-nada expuesto) es idéntico.
+El dominio `punkyintranet.com` es del desarrollador (no del cliente), vive en
+su cuenta Cloudflare y hace doble función:
+- `https://punkyintranet.com` → hostname HTTP del túnel → `localhost:8080`
+  (la intranet con HTTPS, sin abrir puertos y sin chocar con Hermes).
+- `db.punkyintranet.com` → hostname **TCP** del túnel → `tcp://127.0.0.1:5432`,
+  protegido con **Cloudflare Access + Service Token** (política Service Auth).
+
+Configuración:
+1. **VPS**: instalar el túnel `punky` como servicio (comando del panel Zero
+   Trust). `PG_BIND` se queda en `127.0.0.1` (la base nunca sale de localhost).
+   `.env`: `CLIENT_ORIGIN=https://punkyintranet.com`, `COOKIE_SECURE=true`.
+2. **Windows del cliente** (tras la Fase 0/1 del plan blindado):
+   ```powershell
+   cloudflared.exe access tcp --hostname db.punkyintranet.com \
+     --url tcp://127.0.0.1:5432 --service-token-id ID --service-token-secret SECRETO
+   ```
+   `.env` del punky-sync: `PG_HOST=127.0.0.1`, `PG_SSL=false`.
+3. La app web NO va detrás de Access (tiene su propio login).
+
+Alternativas descartadas pero documentadas: Tailscale (gratis, más simple —
+el cliente prefirió Cloudflare), WARP+red privada (vetado por el incidente),
+WireGuard puro (sin terceros; opción futura si se quiere soberanía total).
 
 ## Qué replica (tables.config.js del punky-sync)
 
