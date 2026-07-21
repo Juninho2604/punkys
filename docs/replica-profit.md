@@ -51,6 +51,25 @@ punky-deploy
 Verificar que NO quedó público: `ss -tlnp | grep 5432` debe mostrar solo la
 IP 100.x.y.z (y/o 127.0.0.1), nunca `0.0.0.0`.
 
+## Alternativa de túnel: Cloudflare Zero Trust (en vez de Tailscale)
+
+Mismo principio, más pasos. No requiere mover el dominio (la cuenta Zero
+Trust usa un *team name* propio). Resumen:
+1. VPS: alias interno `ip addr add 10.88.88.1/32 dev lo` (persistir con un
+   servicio systemd antes de docker) y `PG_BIND=10.88.88.1` + `punky-deploy`.
+2. Panel Zero Trust: crear Tunnel (`cloudflared` como servicio en el VPS),
+   ruta *Private Network* `10.88.88.1/32`, activar **Proxy TCP**
+   (Settings → Network) y device enrollment restringido por correo.
+3. **Split Tunnels en modo Include con SOLO `10.88.88.1/32`** — crítico: sin
+   esto, WARP desvía TODO el tráfico del servidor del cliente por Cloudflare.
+4. Windows del cliente: instalar WARP → login Zero Trust → `PG_HOST=10.88.88.1`
+   en el `.env` del punky-sync.
+
+Tercera opción sin terceros: WireGuard puro entre ambos servidores (un solo
+puerto UDP en el VPS). Cualquiera de los tres túneles sirve: `PG_BIND` acepta
+la IP privada del que se use, y el resto (usuario enjaulado, esquema profit,
+nada expuesto) es idéntico.
+
 ## Qué replica (tables.config.js del punky-sync)
 
 Ventas completas (cotizaciones, pedidos, facturas, renglones), CxC
