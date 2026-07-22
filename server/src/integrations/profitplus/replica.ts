@@ -85,6 +85,7 @@ async function refrescarProductos(): Promise<string> {
   )
 
   let sinPrecio = 0
+  let convertidos = 0
   const productos: { codigo: string; nombre: string; precio: number; moneda: string; stock: Record<string, number> }[] = []
   for (const a of arts.rows) {
     const precio = precioDe.get(a.codigo)
@@ -92,11 +93,19 @@ async function refrescarProductos(): Promise<string> {
       sinPrecio++
       continue
     }
+    // Profit lista los precios en USD. Los convertimos a Bs con la tasa BCV
+    // para que el pedido cotice en bolívares (moneda del negocio). Si por algún
+    // motivo no hay tasa, se deja el valor tal cual marcado en su moneda real
+    // (mejor eso que multiplicar por una tasa inválida).
+    const enUsd = esUsd(precio.mone)
+    const convertir = enUsd && tasaHoy > 0
+    if (convertir) convertidos++
+    const monto = convertir ? precio.monto * tasaHoy : precio.monto
     productos.push({
       codigo: a.codigo,
       nombre: a.nombre,
-      precio: Math.round(precio.monto * 100) / 100,
-      moneda: esUsd(precio.mone) ? 'USD' : precio.mone,
+      precio: Math.round(monto * 100) / 100,
+      moneda: convertir ? 'Bs' : enUsd ? 'USD' : precio.mone,
       stock: stockDe.get(a.codigo) ?? {},
     })
   }
@@ -118,7 +127,12 @@ async function refrescarProductos(): Promise<string> {
       fuente: 'réplica Profit',
       registros: productos.length,
       desactivados,
-      detalle: sinPrecio ? `sin precio vigente (lista ${lista}): ${sinPrecio}` : null,
+      detalle: [
+        sinPrecio ? `sin precio vigente (lista ${lista}): ${sinPrecio}` : null,
+        convertidos ? `precios USD→Bs @${Math.round(tasaHoy * 100) / 100}: ${convertidos}` : null,
+      ]
+        .filter(Boolean)
+        .join(' · ') || null,
     })
   })
   return `productos ${productos.length}${sinPrecio ? ` (sin precio: ${sinPrecio})` : ''}`
