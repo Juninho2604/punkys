@@ -14,22 +14,17 @@ import type { PPStatus } from './types.js'
 // - Las columnas char() llegan con espacios de relleno → trim() en TODO cruce.
 // - saArtPrecio es histórico: precio vigente = inactivo=false, desde<=hoy,
 //   (hasta nulo o futuro); se prefiere la lista PP_LISTA y el `desde` más nuevo.
-// - Montos: si la moneda no es USD se divide entre `tasa` cuando viene (>0).
+// - Montos de documentos: se guardan TAL CUAL vienen de Profit (Bolívares) y se
+//   etiquetan con PP_MONEDA (default 'Bs'). El equivalente en USD lo calcula la
+//   intranet al mostrar, con la tasa oficial del BCV (servicio tasaCambio).
+//   Los PRECIOS de artículos sí quedan en su moneda de lista (USD en Profit).
 
 const REFRESH_MS = 5 * 60_000
-
-function trimOrEmpty(v: unknown): string {
-  return typeof v === 'string' ? v.trim() : v == null ? '' : String(v).trim()
-}
+const MONEDA_DOC = () => config.profitPlus.replica.moneda
 
 function esUsd(mone: string): boolean {
   const m = mone.toUpperCase()
   return m === '' || m.includes('USD') || m.includes('US$') || m === '$' || m.includes('DOL')
-}
-
-function aUsd(monto: number, mone: string, tasa: number): number {
-  if (esUsd(mone)) return monto
-  return tasa > 0 ? monto / tasa : monto
 }
 
 async function replicaDisponible(): Promise<boolean> {
@@ -143,7 +138,7 @@ async function refrescarCxc(): Promise<string> {
           total: Number(r.total),
           saldo: Number(r.saldo),
           dias_vencido: Number(r.dias),
-          moneda: esUsd(r.mone) ? 'USD' : r.mone,
+          moneda: MONEDA_DOC(),
         })),
         500,
       )
@@ -177,8 +172,10 @@ async function refrescarCobranzas(): Promise<string> {
       cliente: r.cliente,
       vendedor_norm: normalizarNombre(r.vendedor),
       vendedor: r.vendedor,
-      monto_usd: Math.round(aUsd(Number(r.monto), r.mone, Number(r.tasa)) * 100) / 100,
-      moneda: 'USD',
+      // monto_usd conserva el nombre de columna, pero guarda el monto en la
+      // moneda del documento (Bs); el USD se calcula al mostrar con la tasa BCV.
+      monto_usd: Math.round(Number(r.monto) * 100) / 100,
+      moneda: MONEDA_DOC(),
     }))
   await db.transaction(async (trx) => {
     await trx('pp_cobranzas').del()
@@ -212,7 +209,7 @@ async function refrescarVentas(): Promise<string> {
     const key = `${r.mes}|${r.vendedor}|${r.categoria}`
     const a = agg.get(key) ?? { mes: r.mes, vendedor: r.vendedor, categoria: r.categoria, unidades: 0, monto: 0 }
     a.unidades += Number(r.unidades)
-    a.monto += aUsd(Number(r.monto), r.mone, Number(r.tasa))
+    a.monto += Number(r.monto) // en Bs; el USD se calcula al mostrar con la tasa BCV
     agg.set(key, a)
   }
   const filas = [...agg.values()].map((a) => ({
@@ -247,8 +244,8 @@ async function refrescarCompras(): Promise<string> {
     documento: r.documento,
     proveedor: r.proveedor,
     categoria: null,
-    monto_usd: Math.round(aUsd(Number(r.monto), r.mone, Number(r.tasa)) * 100) / 100,
-    moneda: 'USD',
+    monto_usd: Math.round(Number(r.monto) * 100) / 100, // en Bs (ver nota arriba)
+    moneda: MONEDA_DOC(),
   }))
   await db.transaction(async (trx) => {
     await trx('pp_compras').del()
@@ -284,7 +281,7 @@ async function refrescarCxp(): Promise<string> {
           total: Number(r.total),
           saldo: Number(r.saldo),
           dias_vencido: Number(r.dias),
-          moneda: esUsd(r.mone) ? 'USD' : r.mone,
+          moneda: MONEDA_DOC(),
         })),
         500,
       )

@@ -69,6 +69,12 @@ services:
       PP_LISTA: ${PP_LISTA:-001}
       PP_STOCK_TIPOS: ${PP_STOCK_TIPOS:-}
       PP_ALMACEN_SEDES: ${PP_ALMACEN_SEDES:-002:Almacén Boleíta,035:Almacén Principal}
+      PP_MONEDA: ${PP_MONEDA:-Bs}
+      # Tasa BCV (equivalente USD de montos en Bs)
+      BCV_API_URL: ${BCV_API_URL:-https://ve.dolarapi.com/v1/dolares/oficial}
+      BCV_TASA_MANUAL: ${BCV_TASA_MANUAL:-}
+      BCV_TASA_FALLBACK: ${BCV_TASA_FALLBACK:-}
+      BCV_REFRESH_HORAS: ${BCV_REFRESH_HORAS:-8}
       PP_DB_HOST: ${PP_DB_HOST:-}
       PP_DB_PORT: ${PP_DB_PORT:-1433}
       PP_DB_NAME: ${PP_DB_NAME:-}

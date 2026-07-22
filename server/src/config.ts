@@ -22,6 +22,17 @@ export const config = {
   // para subir inventario). Vacío = ingesta deshabilitada.
   syncToken: process.env.SYNC_TOKEN ?? '',
 
+  // Tasa de cambio oficial (BCV) para el equivalente USD de los montos en Bs.
+  bcv: {
+    // API que publica la tasa oficial (dolarapi devuelve `promedio`).
+    apiUrl: process.env.BCV_API_URL ?? 'https://ve.dolarapi.com/v1/dolares/oficial',
+    // Override manual (>0): ignora la API y usa este valor fijo.
+    manual: Number(process.env.BCV_TASA_MANUAL ?? 0),
+    // Valor de emergencia si la API falla y no hay tasa previa (>0 para usarlo).
+    fallback: Number(process.env.BCV_TASA_FALLBACK ?? 0),
+    refreshHoras: Number(process.env.BCV_REFRESH_HORAS ?? 8),
+  },
+
   email: {
     provider: env('EMAIL_PROVIDER', 'console') as 'console' | 'smtp',
     from: env('EMAIL_FROM', 'Punky Partners <notificaciones@punkypartners.com>'),
@@ -58,6 +69,9 @@ export const config = {
         .split(',')
         .map((s) => s.trim())
         .filter(Boolean),
+      // Moneda de los documentos de Profit (facturas/cobros/CxC/compras).
+      // En Venezuela suelen ser Bolívares aunque la lista de precios sea USD.
+      moneda: (process.env.PP_MONEDA ?? 'Bs').trim(),
       // Almacenes de Profit expuestos como sedes: "co_alma:Nombre,co_alma:Nombre"
       sedes: Object.fromEntries(
         (process.env.PP_ALMACEN_SEDES ?? '002:Almacén Boleíta,035:Almacén Principal')

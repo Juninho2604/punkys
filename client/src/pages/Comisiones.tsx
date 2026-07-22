@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { api } from '../lib/api'
 import { useToast } from '../lib/toast'
+import { bs, montoDual, etiquetaTasa, useTasa } from '../lib/moneda'
 
 interface Fila {
   vendedorNorm: string
@@ -19,7 +20,7 @@ interface Data {
   actualizado: string | null
 }
 
-const usd = (n: number) => `$ ${n.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+const usd = (n: number) => bs(n)
 
 function periodoLabel(p: { inicio: string; fin: string }): string {
   const mes = new Date(`${p.inicio.slice(0, 7)}-01T12:00:00`).toLocaleDateString('es-VE', { month: 'short', year: 'numeric' })
@@ -28,6 +29,7 @@ function periodoLabel(p: { inicio: string; fin: string }): string {
 
 export function Comisiones() {
   const toast = useToast()
+  const tasa = useTasa()
   const [data, setData] = useState<Data | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [editando, setEditando] = useState<Fila | null>(null)
@@ -106,7 +108,7 @@ export function Comisiones() {
         <div>
           <h1 className="h1-module">Comisiones</h1>
           <p className="subtitle">
-            Sobre lo cobrado en Profit, por quincena. {data.actualizado ? `Cobranzas actualizadas ${new Date(data.actualizado).toLocaleString('es-VE')}.` : 'Sin cobranzas sincronizadas aún.'}
+            Sobre lo cobrado en Profit (Bs), por quincena. {data.actualizado ? `Cobranzas actualizadas ${new Date(data.actualizado).toLocaleString('es-VE')}.` : 'Sin cobranzas sincronizadas aún.'} · {etiquetaTasa(tasa)}
           </p>
         </div>
         {!vacio && (
@@ -133,11 +135,11 @@ export function Comisiones() {
           <div className="kpi-grid" style={{ gridTemplateColumns: 'repeat(3,1fr)' }}>
             <div className="card card-kpi">
               <div className="field-label">Cobrado en la quincena</div>
-              <div className="kpi-value" style={{ fontSize: 28 }}>{usd(data.totales.baseUsd)}</div>
+              <div className="kpi-value" style={{ fontSize: 20 }}>{montoDual(data.totales.baseUsd, tasa)}</div>
             </div>
             <div className="card card-kpi">
               <div className="field-label">Comisiones del período</div>
-              <div className="kpi-value" style={{ fontSize: 28, color: 'var(--success-600)' }}>{usd(data.totales.comisionUsd)}</div>
+              <div className="kpi-value" style={{ fontSize: 20, color: 'var(--success-600)' }}>{montoDual(data.totales.comisionUsd, tasa)}</div>
             </div>
             <div className="card card-kpi">
               <div className="field-label">Vendedores</div>

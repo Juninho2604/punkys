@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { api } from '../lib/api'
+import { montoDual, etiquetaTasa, useTasa } from '../lib/moneda'
 
 interface ClienteCxc {
   cliente: string
@@ -20,6 +21,7 @@ const fmt = (n: number, m = 'USD') => `${m} ${n.toLocaleString('es-VE', { minimu
 export function CuentasPorCobrar() {
   const [data, setData] = useState<Data | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const tasa = useTasa()
 
   useEffect(() => {
     api.get<Data>('/cxc').then(setData).catch((e) => setError(e instanceof Error ? e.message : 'Error'))
@@ -36,7 +38,7 @@ export function CuentasPorCobrar() {
       <div>
         <h1 className="h1-module">Cuentas por Cobrar</h1>
         <p className="subtitle">
-          Saldos reales de Profit por cliente. {data.actualizado ? `Actualizado ${new Date(data.actualizado).toLocaleString('es-VE')}.` : 'Sin datos sincronizados aún.'}
+          Saldos reales de Profit por cliente. {data.actualizado ? `Actualizado ${new Date(data.actualizado).toLocaleString('es-VE')}.` : 'Sin datos sincronizados aún.'} · {etiquetaTasa(tasa)}
         </p>
       </div>
 
@@ -51,11 +53,11 @@ export function CuentasPorCobrar() {
           <div className="kpi-grid" style={{ gridTemplateColumns: 'repeat(3,1fr)' }}>
             <div className="card card-kpi">
               <div className="field-label">Saldo total por cobrar</div>
-              <div className="kpi-value" style={{ fontSize: 28 }}>{fmt(data.totales.saldo)}</div>
+              <div className="kpi-value" style={{ fontSize: 20 }}>{montoDual(data.totales.saldo, tasa)}</div>
             </div>
             <div className="card card-kpi">
               <div className="field-label">Vencido</div>
-              <div className="kpi-value" style={{ fontSize: 28, color: data.totales.vencido > 0 ? 'var(--danger-500)' : 'var(--success-600)' }}>{fmt(data.totales.vencido)}</div>
+              <div className="kpi-value" style={{ fontSize: 20, color: data.totales.vencido > 0 ? 'var(--danger-500)' : 'var(--success-600)' }}>{montoDual(data.totales.vencido, tasa)}</div>
             </div>
             <div className="card card-kpi">
               <div className="field-label">Clientes con saldo</div>

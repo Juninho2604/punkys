@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { api } from '../lib/api'
+import { bs, montoDual, etiquetaTasa, useTasa } from '../lib/moneda'
 
 interface Fila {
   monto: number
@@ -16,7 +17,7 @@ interface Resumen {
   actualizado: string | null
 }
 
-const usd = (n: number) => `$ ${n.toLocaleString('es-VE', { maximumFractionDigits: 0 })}`
+const usd = (n: number) => bs(n)
 const mesLabel = (m: string) => {
   const [y, mm] = m.split('-')
   return new Date(Number(y), Number(mm) - 1, 1).toLocaleDateString('es-VE', { month: 'short', year: '2-digit' })
@@ -25,6 +26,7 @@ const mesLabel = (m: string) => {
 export function Ventas() {
   const [data, setData] = useState<Resumen | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const tasa = useTasa()
 
   useEffect(() => {
     api.get<Resumen>('/ventas/resumen').then(setData).catch((e) => setError(e instanceof Error ? e.message : 'Error'))
@@ -43,7 +45,7 @@ export function Ventas() {
       <div>
         <h1 className="h1-module">Ventas Analítica</h1>
         <p className="subtitle">
-          Ventas de Profit (USD){data.hayMargen ? ' con margen' : ''}. {data.actualizado ? `Actualizado ${new Date(data.actualizado).toLocaleString('es-VE')}.` : 'Sin datos sincronizados aún.'}
+          Ventas de Profit (Bs){data.hayMargen ? ' con margen' : ''}. {data.actualizado ? `Actualizado ${new Date(data.actualizado).toLocaleString('es-VE')}.` : 'Sin datos sincronizados aún.'} · {etiquetaTasa(tasa)}
         </p>
       </div>
 
@@ -56,7 +58,7 @@ export function Ventas() {
           <div className="kpi-grid" style={{ gridTemplateColumns: data.hayMargen ? 'repeat(3,1fr)' : 'repeat(2,1fr)' }}>
             <div className="card card-kpi">
               <div className="field-label">Ventas del período ({data.meses.length} meses)</div>
-              <div className="kpi-value" style={{ fontSize: 30 }}>{usd(data.totalUsd)}</div>
+              <div className="kpi-value" style={{ fontSize: 22 }}>{montoDual(data.totalUsd, tasa)}</div>
             </div>
             {data.hayMargen && (
               <div className="card card-kpi">

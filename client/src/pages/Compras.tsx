@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { api } from '../lib/api'
+import { bs, montoDual, etiquetaTasa, useTasa } from '../lib/moneda'
 
 interface Resumen {
   porMes: { mes: string; monto: number; docs: number }[]
@@ -14,8 +15,8 @@ interface Resumen {
   actualizadoCxp: string | null
 }
 
-const usd = (n: number) => `$ ${n.toLocaleString('es-VE', { maximumFractionDigits: 0 })}`
-const usd2 = (n: number, m = 'USD') => `${m} ${n.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+const usd = (n: number) => bs(n)
+const usd2 = (n: number, m = 'Bs') => bs(n, m)
 const mesLabel = (m: string) => {
   const [y, mm] = m.split('-')
   return new Date(Number(y), Number(mm) - 1, 1).toLocaleDateString('es-VE', { month: 'short', year: '2-digit' })
@@ -24,6 +25,7 @@ const mesLabel = (m: string) => {
 export function Compras() {
   const [data, setData] = useState<Resumen | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const tasa = useTasa()
 
   useEffect(() => {
     api.get<Resumen>('/compras/resumen').then(setData).catch((e) => setError(e instanceof Error ? e.message : 'Error'))
@@ -45,8 +47,8 @@ export function Compras() {
       <div>
         <h1 className="h1-module">Compras &amp; Por Pagar</h1>
         <p className="subtitle">
-          El lado del gasto, desde Profit.{' '}
-          {data.actualizadoCompras ? `Compras actualizadas ${new Date(data.actualizadoCompras).toLocaleString('es-VE')}.` : 'Sin compras sincronizadas aún.'}
+          El lado del gasto, desde Profit (Bs).{' '}
+          {data.actualizadoCompras ? `Compras actualizadas ${new Date(data.actualizadoCompras).toLocaleString('es-VE')}.` : 'Sin compras sincronizadas aún.'} · {etiquetaTasa(tasa)}
         </p>
       </div>
 
@@ -62,16 +64,16 @@ export function Compras() {
           <div className="kpi-grid" style={{ gridTemplateColumns: 'repeat(3,1fr)' }}>
             <div className="card card-kpi">
               <div className="field-label">Compras del período ({data.porMes.length} meses)</div>
-              <div className="kpi-value" style={{ fontSize: 28 }}>{usd(totalCompras)}</div>
+              <div className="kpi-value" style={{ fontSize: 19 }}>{montoDual(totalCompras, tasa)}</div>
             </div>
             <div className="card card-kpi">
               <div className="field-label">Por pagar a proveedores</div>
-              <div className="kpi-value" style={{ fontSize: 28 }}>{usd2(data.cxp.totales.saldo)}</div>
+              <div className="kpi-value" style={{ fontSize: 19 }}>{montoDual(data.cxp.totales.saldo, tasa)}</div>
             </div>
             <div className="card card-kpi">
               <div className="field-label">Vencido con proveedores</div>
-              <div className="kpi-value" style={{ fontSize: 28, color: data.cxp.totales.vencido > 0 ? 'var(--danger-500)' : 'var(--success-600)' }}>
-                {usd2(data.cxp.totales.vencido)}
+              <div className="kpi-value" style={{ fontSize: 19, color: data.cxp.totales.vencido > 0 ? 'var(--danger-500)' : 'var(--success-600)' }}>
+                {montoDual(data.cxp.totales.vencido, tasa)}
               </div>
             </div>
           </div>
