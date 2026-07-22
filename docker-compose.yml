@@ -63,6 +63,11 @@ services:
       TWILIO_WHATSAPP_FROM: ${TWILIO_WHATSAPP_FROM:-}
       WA_CLOUD_PHONE_NUMBER_ID: ${WA_CLOUD_PHONE_NUMBER_ID:-}
       WA_CLOUD_ACCESS_TOKEN: ${WA_CLOUD_ACCESS_TOKEN:-}
+      # Migración intranet-Sheets (Ola 1: catálogos)
+      SHEETS_URL_PRODUCTOS: ${SHEETS_URL_PRODUCTOS:-}
+      SHEETS_URL_ALMACENES: ${SHEETS_URL_ALMACENES:-}
+      SHEETS_URL_CATEGORIAS: ${SHEETS_URL_CATEGORIAS:-}
+      SHEETS_REFRESH_MIN: ${SHEETS_REFRESH_MIN:-15}
       # Profit Plus 2K12
       PROFIT_PLUS_MODE: ${PROFIT_PLUS_MODE:-simulado}
       # Modo réplica: lista de precios, tipos de stock y mapeo almacén→sede

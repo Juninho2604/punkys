@@ -22,6 +22,21 @@ export const config = {
   // para subir inventario). Vacío = ingesta deshabilitada.
   syncToken: process.env.SYNC_TOKEN ?? '',
 
+  // Espejo de la intranet-Sheets del cliente (Ola 1: catálogos). SOLO LECTURA.
+  // Cada URL = un CSV publicado del tab correspondiente (File → Publicar en la
+  // web → CSV, o el export?format=csv&gid=...). Vacías = conector dormido.
+  sheets: {
+    urls: {
+      productos: process.env.SHEETS_URL_PRODUCTOS ?? '',
+      almacenes: process.env.SHEETS_URL_ALMACENES ?? '',
+      categorias: process.env.SHEETS_URL_CATEGORIAS ?? '',
+    } as Record<'productos' | 'almacenes' | 'categorias', string>,
+    refreshMin: Number(process.env.SHEETS_REFRESH_MIN ?? 15),
+    get habilitado(): boolean {
+      return Boolean(this.urls.productos || this.urls.almacenes || this.urls.categorias)
+    },
+  },
+
   // Tasa de cambio oficial (BCV) para el equivalente USD de los montos en Bs.
   bcv: {
     // API que publica la tasa oficial (dolarapi devuelve `promedio`).

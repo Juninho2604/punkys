@@ -2,6 +2,7 @@ import { createApp } from './app.js'
 import { config } from './config.js'
 import { iniciarRefrescoReplica } from './integrations/profitplus/replica.js'
 import { iniciarRefrescoTasa } from './services/tasaCambio.js'
+import { iniciarSincronizacionSheets } from './integrations/sheets/index.js'
 
 const app = createApp()
 
@@ -12,4 +13,6 @@ app.listen(config.port, () => {
   if (config.profitPlus.mode === 'replica') iniciarRefrescoReplica()
   // Tasa BCV para el equivalente USD de los montos en Bs
   iniciarRefrescoTasa()
+  // Espejo de los catálogos de la intranet-Sheets del cliente (si hay URLs)
+  iniciarSincronizacionSheets()
 })

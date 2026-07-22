@@ -17,6 +17,7 @@ import { CuentasPorCobrar } from './pages/CuentasPorCobrar'
 import { Ventas } from './pages/Ventas'
 import { Comisiones } from './pages/Comisiones'
 import { Compras } from './pages/Compras'
+import { Catalogos } from './pages/Catalogos'
 import type { Rol } from './lib/types'
 
 function Protegida({ roles, children }: { roles?: Rol[]; children: React.ReactNode }) {
@@ -54,6 +55,7 @@ function Rutas() {
         <Route path="/ventas" element={<Protegida roles={[]}><Ventas /></Protegida>} />
         <Route path="/comisiones" element={<Protegida roles={[]}><Comisiones /></Protegida>} />
         <Route path="/compras" element={<Protegida roles={[]}><Compras /></Protegida>} />
+        <Route path="/catalogos" element={<Protegida roles={[]}><Catalogos /></Protegida>} />
         <Route path="/usuarios" element={<Protegida roles={[]}><Usuarios /></Protegida>} />
         <Route path="/sistema-diseno" element={<Protegida roles={[]}><DesignSystem /></Protegida>} />
       </Route>

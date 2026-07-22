@@ -17,6 +17,7 @@ import { ventasRouter } from './routes/ventas.js'
 import { comisionesRouter } from './routes/comisiones.js'
 import { comprasRouter } from './routes/compras.js'
 import { tasaRouter } from './routes/tasa.js'
+import { operacionalRouter } from './routes/operacional.js'
 
 export function createApp() {
   const app = express()
@@ -42,6 +43,7 @@ export function createApp() {
   app.use('/api/comisiones', comisionesRouter)
   app.use('/api/compras', comprasRouter)
   app.use('/api/tasa', tasaRouter)
+  app.use('/api/operacional', operacionalRouter)
 
   app.use(errorHandler)
   return app

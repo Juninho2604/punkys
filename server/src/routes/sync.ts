@@ -362,6 +362,16 @@ syncRouter.post('/replica/refresh', requireAuth, requireRole(), async (_req, res
   }
 })
 
+// Refresco manual del espejo de Google Sheets (catálogos). Solo admin.
+syncRouter.post('/sheets/refresh', requireAuth, requireRole(), async (_req, res, next) => {
+  try {
+    const { sincronizarSheets } = await import('../integrations/sheets/index.js')
+    res.json(await sincronizarSheets())
+  } catch (err) {
+    next(err)
+  }
+})
+
 // Estado del puente (para el admin en la intranet)
 syncRouter.get('/estado', requireAuth, requireRole(), async (_req, res, next) => {
   try {
