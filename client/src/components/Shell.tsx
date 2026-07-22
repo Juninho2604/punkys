@@ -5,6 +5,7 @@ import { ROL_LABEL, useAuth } from '../lib/auth'
 import { api } from '../lib/api'
 import { useToast } from '../lib/toast'
 import { iniciales } from '../lib/format'
+import { InstallApp } from './InstallApp'
 import type { Rol } from '../lib/types'
 
 // Contexto para refrescar el contador de pendientes del sidebar tras aprobar/rechazar
@@ -21,7 +22,7 @@ interface NavItem {
 
 const NAV: NavItem[] = [
   { to: '/', label: 'Dashboard', icon: LayoutGrid, roles: ['vendedor', 'cxc', 'facturacion', 'despacho', 'admin'] },
-  { to: '/cotizacion', label: 'Cotización', icon: FileText, roles: ['vendedor', 'admin'] },
+  { to: '/cotizacion', label: 'Nuevo Pedido', icon: FileText, roles: ['vendedor', 'admin'] },
   { to: '/aprobaciones', label: 'Aprobaciones', icon: CheckCircle, roles: ['cxc', 'admin'], badge: 'pend' },
   { to: '/facturacion', label: 'Facturación', icon: ReceiptText, roles: ['facturacion', 'admin'], badge: 'fact' },
   { to: '/cuentas-por-cobrar', label: 'Cuentas por Cobrar', icon: Wallet, roles: ['cxc', 'admin'] },
@@ -30,7 +31,7 @@ const NAV: NavItem[] = [
 
 const TITULOS: Record<string, string> = {
   '/': 'Dashboard',
-  '/cotizacion': 'Cotización',
+  '/cotizacion': 'Nuevo Pedido',
   '/aprobaciones': 'Aprobaciones',
   '/facturacion': 'Facturación',
   '/cuentas-por-cobrar': 'Cuentas por Cobrar',
@@ -158,6 +159,7 @@ export function Shell() {
                 }}
               />
             </div>
+            <InstallApp />
             <button className="header-bell" title="Notificaciones">
               <Bell size={18} strokeWidth={2.2} color="var(--ink-900)" />
               <span className="dot" />
