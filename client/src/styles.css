@@ -1133,6 +1133,18 @@ textarea::placeholder {
   .tipo-row .tipo-spec {
     display: none;
   }
+
+  /* iOS Safari hace zoom automático al enfocar un campo con letra < 16px,
+     lo que descuadra toda la vista. Forzamos 16px en móvil para evitarlo. */
+  .input-text,
+  .inv-search input,
+  select.input-text,
+  textarea.input-text,
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
 }
 
 @media (max-width: 640px) {
@@ -1167,6 +1179,18 @@ textarea::placeholder {
   .header-profile {
     padding-left: 10px;
     gap: 8px;
+  }
+
+  /* Navegación del wizard (Anterior/Siguiente): botones más grandes y
+     cómodos para el pulgar en teléfono. */
+  .card-pad-lg > div:last-child {
+    gap: 12px;
+  }
+
+  .card-pad-lg > div:last-child .btn {
+    flex: 1;
+    min-height: 48px;
+    justify-content: center;
   }
 
   .pricing-head,
