@@ -15,12 +15,14 @@ comprasRouter.get('/resumen', async (_req, res, next) => {
       db('pp_compras')
         .select(db.raw("to_char(fecha, 'YYYY-MM') as mes"))
         .sum('monto_usd as monto')
+        .sum('monto_usd_real as montousd')
         .count('* as docs')
         .groupBy('mes')
         .orderBy('mes'),
       db('pp_compras')
         .select('proveedor')
         .sum('monto_usd as monto')
+        .sum('monto_usd_real as montousd')
         .count('* as docs')
         .groupBy('proveedor')
         .orderByRaw('sum(monto_usd) desc')
@@ -36,7 +38,9 @@ comprasRouter.get('/resumen', async (_req, res, next) => {
       db('pp_cxp')
         .select('proveedor', 'moneda')
         .sum('saldo as saldo')
+        .sum('saldo_usd as saldousd')
         .sum({ vencido: db.raw('case when dias_vencido > 0 then saldo else 0 end') })
+        .sum({ vencidousd: db.raw('case when dias_vencido > 0 then saldo_usd else 0 end') })
         .max('dias_vencido as peor_dias')
         .count('* as docs')
         .groupBy('proveedor', 'moneda')
@@ -46,8 +50,8 @@ comprasRouter.get('/resumen', async (_req, res, next) => {
     ])
 
     res.json({
-      porMes: porMesRaw.map((m) => ({ mes: m.mes, monto: Number(m.monto), docs: Number(m.docs) })),
-      porProveedor: porProveedor.map((p) => ({ proveedor: p.proveedor, monto: Number(p.monto), docs: Number(p.docs) })),
+      porMes: porMesRaw.map((m) => ({ mes: m.mes, monto: Number(m.monto), montoUsd: Number(m.montousd ?? 0), docs: Number(m.docs) })),
+      porProveedor: porProveedor.map((p) => ({ proveedor: p.proveedor, monto: Number(p.monto), montoUsd: Number(p.montousd ?? 0), docs: Number(p.docs) })),
       porCategoria: porCategoria.map((c) => ({ categoria: c.categoria, monto: Number(c.monto) })),
       ultimas: ultimas.map((u) => ({
         fecha: u.fecha,
@@ -55,6 +59,7 @@ comprasRouter.get('/resumen', async (_req, res, next) => {
         proveedor: u.proveedor,
         categoria: u.categoria,
         montoUsd: Number(u.monto_usd),
+        montoUsdReal: Number(u.monto_usd_real ?? 0),
         moneda: u.moneda,
       })),
       cxp: {
@@ -62,13 +67,17 @@ comprasRouter.get('/resumen', async (_req, res, next) => {
           proveedor: p.proveedor,
           moneda: p.moneda,
           saldo: Number(p.saldo),
+          saldoUsd: Number(p.saldousd ?? 0),
           vencido: Number(p.vencido),
+          vencidoUsd: Number(p.vencidousd ?? 0),
           peorDiasVencido: Number(p.peor_dias),
           documentos: Number(p.docs),
         })),
         totales: {
           saldo: cxpRaw.reduce((s, p) => s + Number(p.saldo), 0),
+          saldoUsd: cxpRaw.reduce((s, p) => s + Number(p.saldousd ?? 0), 0),
           vencido: cxpRaw.reduce((s, p) => s + Number(p.vencido), 0),
+          vencidoUsd: cxpRaw.reduce((s, p) => s + Number(p.vencidousd ?? 0), 0),
         },
       },
       actualizadoCompras: syncCompras?.created_at ?? null,

@@ -48,9 +48,17 @@ export function montoDual(nBs: number, tasa: Tasa | null, moneda = 'Bs'): string
   return eq ? `${bs(nBs, moneda)} ${eq}` : bs(nBs, moneda)
 }
 
+// Igual que montoDual pero con el USD YA calculado (histórico, a la tasa de
+// cada documento en Profit) en vez de dividir por la tasa de hoy.
+export function bsUsd(nBs: number, usdVal: number, moneda = 'Bs'): string {
+  return usdVal > 0 ? `${bs(nBs, moneda)}  ≈ $ ${nf(0).format(usdVal)}` : bs(nBs, moneda)
+}
+
 export function etiquetaTasa(tasa: Tasa | null): string {
   if (!tasa || tasa.valor <= 0) return 'Sin tasa BCV (montos solo en Bs)'
-  const f = tasa.fecha ? new Date(tasa.fecha + 'T12:00:00').toLocaleDateString('es-VE') : ''
+  // fecha puede venir como 'YYYY-MM-DD' o ISO completo; tomamos solo la fecha
+  const d = tasa.fecha ? new Date(String(tasa.fecha).slice(0, 10) + 'T12:00:00') : null
+  const f = d && !isNaN(d.getTime()) ? d.toLocaleDateString('es-VE') : ''
   const fuente = tasa.fuente === 'manual' ? ' · manual' : tasa.fuente === 'bcv-api' ? ' · BCV' : ''
-  return `Tasa: ${nf(2).format(tasa.valor)} Bs/$${f ? ` (${f})` : ''}${fuente}`
+  return `Tasa BCV hoy: ${nf(2).format(tasa.valor)} Bs/$${f ? ` (${f})` : ''}${fuente}`
 }

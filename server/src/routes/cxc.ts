@@ -17,14 +17,18 @@ cxcRouter.get('/', requireRole('cxc'), async (_req, res, next) => {
       .groupBy('cliente_norm', 'cliente', 'moneda')
       .select('cliente', 'moneda')
       .sum({ saldo: 'saldo' })
+      .sum({ saldoUsd: 'saldo_usd' })
       .sum({ vencido: db.raw('case when dias_vencido > 0 and saldo > 0 then saldo else 0 end') })
+      .sum({ vencidoUsd: db.raw('case when dias_vencido > 0 and saldo > 0 then saldo_usd else 0 end') })
       .count({ documentos: '*' })
       .max({ peorDiasVencido: 'dias_vencido' })
       .orderBy('vencido', 'desc')
 
     const [tot] = await db('pp_cxc')
       .sum({ saldo: 'saldo' })
+      .sum({ saldoUsd: 'saldo_usd' })
       .sum({ vencido: db.raw('case when dias_vencido > 0 and saldo > 0 then saldo else 0 end') })
+      .sum({ vencidoUsd: db.raw('case when dias_vencido > 0 and saldo > 0 then saldo_usd else 0 end') })
 
     const ultimo = await db('sync_log').where('dataset', 'cxc').orderBy('created_at', 'desc').first()
 
@@ -33,11 +37,16 @@ cxcRouter.get('/', requireRole('cxc'), async (_req, res, next) => {
         cliente: r.cliente,
         moneda: r.moneda,
         saldo: Number(r.saldo ?? 0),
+        saldoUsd: Number(r.saldoUsd ?? 0),
         vencido: Number(r.vencido ?? 0),
+        vencidoUsd: Number(r.vencidoUsd ?? 0),
         documentos: Number(r.documentos ?? 0),
         peorDiasVencido: Number(r.peorDiasVencido ?? 0),
       })),
-      totales: { saldo: Number(tot?.saldo ?? 0), vencido: Number(tot?.vencido ?? 0) },
+      totales: {
+        saldo: Number(tot?.saldo ?? 0), saldoUsd: Number(tot?.saldoUsd ?? 0),
+        vencido: Number(tot?.vencido ?? 0), vencidoUsd: Number(tot?.vencidoUsd ?? 0),
+      },
       actualizado: ultimo?.created_at ?? null,
     })
   } catch (err) {

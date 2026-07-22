@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { api } from '../lib/api'
-import { montoDual, etiquetaTasa, useTasa } from '../lib/moneda'
+import { bsUsd, etiquetaTasa, useTasa } from '../lib/moneda'
 import { useAuth } from '../lib/auth'
 import { useToast } from '../lib/toast'
 
@@ -8,13 +8,15 @@ interface ClienteCxc {
   cliente: string
   moneda: string
   saldo: number
+  saldoUsd: number
   vencido: number
+  vencidoUsd: number
   documentos: number
   peorDiasVencido: number
 }
 interface Data {
   clientes: ClienteCxc[]
-  totales: { saldo: number; vencido: number }
+  totales: { saldo: number; saldoUsd: number; vencido: number; vencidoUsd: number }
   actualizado: string | null
 }
 interface Nota { id: number; cliente: string; texto: string; autor_nombre: string | null; created_at: string }
@@ -105,11 +107,11 @@ export function CuentasPorCobrar() {
           <div className="kpi-grid" style={{ gridTemplateColumns: 'repeat(3,1fr)' }}>
             <div className="card card-kpi">
               <div className="field-label">Saldo total por cobrar</div>
-              <div className="kpi-value" style={{ fontSize: 20 }}>{montoDual(data.totales.saldo, tasa)}</div>
+              <div className="kpi-value" style={{ fontSize: 20 }}>{bsUsd(data.totales.saldo, data.totales.saldoUsd)}</div>
             </div>
             <div className="card card-kpi">
               <div className="field-label">Vencido</div>
-              <div className="kpi-value" style={{ fontSize: 20, color: data.totales.vencido > 0 ? 'var(--danger-500)' : 'var(--success-600)' }}>{montoDual(data.totales.vencido, tasa)}</div>
+              <div className="kpi-value" style={{ fontSize: 20, color: data.totales.vencido > 0 ? 'var(--danger-500)' : 'var(--success-600)' }}>{bsUsd(data.totales.vencido, data.totales.vencidoUsd)}</div>
             </div>
             <div className="card card-kpi">
               <div className="field-label">Clientes con saldo</div>
@@ -127,9 +129,14 @@ export function CuentasPorCobrar() {
                 {data.clientes.map((c, i) => (
                   <div key={i} className="table-row" style={{ gridTemplateColumns: cols, cursor: 'pointer' }} onClick={() => abrirNotas(c)}>
                     <span className="cell-main">{c.cliente}</span>
-                    <span className="cell-strong">{fmt(c.saldo, c.moneda)}</span>
+                    <span className="cell-strong">
+                      {fmt(c.saldo, c.moneda)}
+                      {c.saldoUsd > 0 && <div className="caption" style={{ color: 'var(--ink-300)', fontWeight: 600 }}>≈ $ {Math.round(c.saldoUsd).toLocaleString('es-VE')}</div>}
+                    </span>
                     <span style={{ font: '700 13px var(--font-ui)', color: c.vencido > 0 ? 'var(--danger-500)' : 'var(--ink-300)' }}>
-                      {c.vencido > 0 ? fmt(c.vencido, c.moneda) : '—'}
+                      {c.vencido > 0 ? (
+                        <>{fmt(c.vencido, c.moneda)}{c.vencidoUsd > 0 && <div className="caption" style={{ color: 'var(--ink-300)', fontWeight: 600 }}>≈ $ {Math.round(c.vencidoUsd).toLocaleString('es-VE')}</div>}</>
+                      ) : '—'}
                     </span>
                     <span className="cell-sub">{c.documentos}</span>
                     <span>

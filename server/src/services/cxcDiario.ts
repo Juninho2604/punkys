@@ -15,15 +15,15 @@ import { config } from '../config.js'
 
 interface DocCxc {
   cliente: string; cliente_norm: string; vendedor: string | null
-  documento: string | null; saldo: number; dias: number
+  documento: string | null; saldo: number; saldoUsd: number; dias: number
 }
 interface Grupo {
   cliente: string; cliente_norm: string; docs: DocCxc[]; creds: DocCxc[]
-  saldo: number; venc: number; cred: number; maxDias: number
+  saldo: number; saldoUsd: number; venc: number; cred: number; maxDias: number
 }
 export interface ReporteVendedor {
   vendedor: string; vendedorNorm: string; correo: string | null; cc: string | null
-  totSaldo: number; totVenc: number; totCred: number
+  totSaldo: number; totSaldoUsd: number; totVenc: number; totCred: number
   aging: { d30: number; d60: number; d60p: number }; vence7: number
   grupos: Grupo[]
 }
@@ -34,7 +34,7 @@ const esc = (s: string) => String(s ?? '').replace(/[&<>]/g, (c) => ({ '&': '&am
 
 // ── Construir los reportes por vendedor desde pp_cxc + notas + correos ───────
 export async function construirReportes(soloVendedor?: string): Promise<ReporteVendedor[]> {
-  const docs = (await db('pp_cxc').select('cliente', 'cliente_norm', 'vendedor', 'documento', 'saldo', 'dias_vencido as dias')) as any[]
+  const docs = (await db('pp_cxc').select('cliente', 'cliente_norm', 'vendedor', 'documento', 'saldo', 'saldo_usd as saldoUsd', 'dias_vencido as dias')) as any[]
   const [overrides, usuarios, notasRaw] = await Promise.all([
     db('cxc_vendedor_correo').where('activo', true),
     db('users').whereIn('rol', ['vendedor', 'cxc']).andWhere('activo', true).select('nombre', 'email'),
@@ -59,7 +59,7 @@ export async function construirReportes(soloVendedor?: string): Promise<ReporteV
     if (!Number(d.saldo)) continue
     const ven = (d.vendedor ?? '').trim() || 'Sin vendedor'
     const arr = porVen.get(ven) ?? []
-    arr.push({ ...d, saldo: Number(d.saldo), dias: Number(d.dias) })
+    arr.push({ ...d, saldo: Number(d.saldo), saldoUsd: Number(d.saldoUsd ?? 0), dias: Number(d.dias) })
     porVen.set(ven, arr)
   }
 
@@ -84,10 +84,10 @@ export async function construirReportes(soloVendedor?: string): Promise<ReporteV
     const gmap = new Map<string, Grupo>()
     const grupo = (x: DocCxc) => {
       let g = gmap.get(x.cliente_norm)
-      if (!g) { g = { cliente: x.cliente, cliente_norm: x.cliente_norm, docs: [], creds: [], saldo: 0, venc: 0, cred: 0, maxDias: -99999 }; gmap.set(x.cliente_norm, g) }
+      if (!g) { g = { cliente: x.cliente, cliente_norm: x.cliente_norm, docs: [], creds: [], saldo: 0, saldoUsd: 0, venc: 0, cred: 0, maxDias: -99999 }; gmap.set(x.cliente_norm, g) }
       return g
     }
-    for (const x of conDeuda) { const g = grupo(x); g.docs.push(x); g.saldo += x.saldo; if (x.dias > 0) g.venc += x.saldo; if (x.dias > g.maxDias) g.maxDias = x.dias }
+    for (const x of conDeuda) { const g = grupo(x); g.docs.push(x); g.saldo += x.saldo; g.saldoUsd += x.saldoUsd; if (x.dias > 0) g.venc += x.saldo; if (x.dias > g.maxDias) g.maxDias = x.dias }
     for (const x of creds) { const g = grupo(x); g.creds.push(x); g.cred += -x.saldo }
 
     const grupos = [...gmap.values()]
@@ -101,6 +101,7 @@ export async function construirReportes(soloVendedor?: string): Promise<ReporteV
       correo: c?.correo ?? usuarioCorreo.get(vNorm) ?? null,
       cc: c?.cc ?? null,
       totSaldo: conDeuda.reduce((s, x) => s + x.saldo, 0),
+      totSaldoUsd: conDeuda.reduce((s, x) => s + x.saldoUsd, 0),
       totVenc: conDeuda.reduce((s, x) => s + (x.dias > 0 ? x.saldo : 0), 0),
       totCred: creds.reduce((s, x) => s - x.saldo, 0),
       aging, vence7,
@@ -112,8 +113,9 @@ export async function construirReportes(soloVendedor?: string): Promise<ReporteV
 }
 
 // ── HTML del correo de un vendedor ───────────────────────────────────────────
-export function htmlReporte(r: ReporteVendedor, tasaValor: number, moneda: string, hoy: string): string {
-  const usd = (n: number) => (tasaValor > 0 ? ` <span style="color:#94a3b8">(≈ $${m0(n / tasaValor)})</span>` : '')
+export function htmlReporte(r: ReporteVendedor, _tasaValor: number, moneda: string, hoy: string): string {
+  // USD histórico: el equivalente de cada saldo al cambio con que se facturó.
+  const usdTot = r.totSaldoUsd > 0 ? ` <span style="color:#94a3b8">(≈ $${m0(r.totSaldoUsd)})</span>` : ''
   const chip = (label: string, val: number, color: string) =>
     val > 0 ? `<span style="display:inline-block;margin:2px 6px 2px 0;padding:3px 9px;border-radius:20px;background:${color}1a;color:${color};font:700 12px system-ui">${label}: ${moneda} ${m0(val)}</span>` : ''
 
@@ -134,7 +136,7 @@ export function htmlReporte(r: ReporteVendedor, tasaValor: number, moneda: strin
       <div style="color:#a9c3ec;font-size:13px">${hoy} · tu cartera para gestionar hoy</div>
     </div>
     <div style="background:#f8fafc;padding:14px 20px;border:1px solid #e2e8f0;border-top:0">
-      <div style="font:800 20px system-ui">Total por cobrar: ${moneda} ${m0(r.totSaldo)}${usd(r.totSaldo)}</div>
+      <div style="font:800 20px system-ui">Total por cobrar: ${moneda} ${m0(r.totSaldo)}${usdTot}</div>
       <div style="margin-top:8px">
         ${chip('Vence en 7 días', r.vence7, '#0369a1')}
         ${chip('1–30 días', r.aging.d30, '#ca8a04')}

@@ -13,24 +13,26 @@ ventasRouter.get('/resumen', requireRole(), async (req, res, next) => {
     const mesesRows = await db('pp_ventas').distinct('mes').orderBy('mes', 'desc').limit(6)
     const meses = mesesRows.map((m) => m.mes).reverse()
 
+    // monto = Bs (columna legada monto_usd) · montoUsd = USD histórico (monto_usd_real)
     const conMargen = (q: any) => (esAdmin ? q.sum({ margen: 'margen_usd' }) : q)
+    const conMontos = (q: any) => conMargen(q.sum({ monto: 'monto_usd' }).sum({ montoUsd: 'monto_usd_real' }))
 
     // Por mes
-    const porMes = await conMargen(
-      db('pp_ventas').whereIn('mes', meses).groupBy('mes').select('mes').sum({ monto: 'monto_usd' }).sum({ unidades: 'unidades' }),
+    const porMes = await conMontos(
+      db('pp_ventas').whereIn('mes', meses).groupBy('mes').select('mes').sum({ unidades: 'unidades' }),
     ).orderBy('mes')
 
     // Por vendedor (rango completo)
-    const porVendedor = await conMargen(
-      db('pp_ventas').whereIn('mes', meses).groupBy('vendedor').select('vendedor').sum({ monto: 'monto_usd' }),
+    const porVendedor = await conMontos(
+      db('pp_ventas').whereIn('mes', meses).groupBy('vendedor').select('vendedor'),
     ).orderBy('monto', 'desc')
 
     // Por categoría (rango completo)
-    const porCategoria = await conMargen(
-      db('pp_ventas').whereIn('mes', meses).groupBy('categoria').select('categoria').sum({ monto: 'monto_usd' }),
+    const porCategoria = await conMontos(
+      db('pp_ventas').whereIn('mes', meses).groupBy('categoria').select('categoria'),
     ).orderBy('monto', 'desc')
 
-    const [tot] = await conMargen(db('pp_ventas').whereIn('mes', meses).sum({ monto: 'monto_usd' }))
+    const [tot] = await conMontos(db('pp_ventas').whereIn('mes', meses))
 
     const num = (x: any) => Number(x ?? 0)
     const marginPct = (monto: number, margen: number | null) =>
@@ -42,10 +44,11 @@ ventasRouter.get('/resumen', requireRole(), async (req, res, next) => {
       hayMargen: esAdmin,
       meses,
       totalUsd: num(tot?.monto),
+      totalUsdReal: num(tot?.montoUsd),
       totalMargenPct: esAdmin ? marginPct(num(tot?.monto), num(tot?.margen)) : null,
-      porMes: porMes.map((r: any) => ({ mes: r.mes, monto: num(r.monto), unidades: num(r.unidades), margenPct: marginPct(num(r.monto), esAdmin ? num(r.margen) : null) })),
-      porVendedor: porVendedor.map((r: any) => ({ vendedor: r.vendedor ?? '—', monto: num(r.monto), margenPct: marginPct(num(r.monto), esAdmin ? num(r.margen) : null) })),
-      porCategoria: porCategoria.map((r: any) => ({ categoria: r.categoria ?? 'otros', monto: num(r.monto), margenPct: marginPct(num(r.monto), esAdmin ? num(r.margen) : null) })),
+      porMes: porMes.map((r: any) => ({ mes: r.mes, monto: num(r.monto), montoUsd: num(r.montoUsd), unidades: num(r.unidades), margenPct: marginPct(num(r.monto), esAdmin ? num(r.margen) : null) })),
+      porVendedor: porVendedor.map((r: any) => ({ vendedor: r.vendedor ?? '—', monto: num(r.monto), montoUsd: num(r.montoUsd), margenPct: marginPct(num(r.monto), esAdmin ? num(r.margen) : null) })),
+      porCategoria: porCategoria.map((r: any) => ({ categoria: r.categoria ?? 'otros', monto: num(r.monto), montoUsd: num(r.montoUsd), margenPct: marginPct(num(r.monto), esAdmin ? num(r.margen) : null) })),
       actualizado: ultimo?.created_at ?? null,
     })
   } catch (err) {

@@ -27,6 +27,15 @@ function esUsd(mone: string): boolean {
   return m === '' || m.includes('USD') || m.includes('US$') || m === '$' || m.includes('DOL')
 }
 
+// USD histórico: si el documento ya está en USD, el monto es el USD; si está en
+// Bs, se divide entre la tasa CON QUE SE FACTURÓ (la del documento en Profit).
+// Sin tasa válida no se puede calcular → null (la vista lo trata como desconocido).
+function usdDoc(montoBs: number, mone: string, tasa: number): number | null {
+  if (esUsd(mone)) return Math.round(montoBs * 100) / 100
+  if (tasa > 0) return Math.round((montoBs / tasa) * 100) / 100
+  return null
+}
+
 async function replicaDisponible(): Promise<boolean> {
   const r = await db.raw("SELECT to_regclass('profit.saarticulo') AS t")
   return Boolean(r.rows?.[0]?.t)
@@ -116,7 +125,7 @@ async function refrescarCxc(): Promise<string> {
             nullif(trim(v.ven_des),'') AS vendedor,
             d.fec_emis, d.fec_venc, d.total_neto AS total, d.saldo,
             greatest(0, (current_date - d.fec_venc::date))::int AS dias,
-            trim(coalesce(d.co_mone,'USD')) AS mone
+            coalesce(d.tasa,0) AS tasa, trim(coalesce(d.co_mone,'USD')) AS mone
      FROM profit.sadocumentoventa d
      LEFT JOIN profit.sacliente c ON trim(c.co_cli) = trim(d.co_cli)
      LEFT JOIN profit.savendedor v ON trim(v.co_ven) = trim(d.co_ven)
@@ -137,6 +146,8 @@ async function refrescarCxc(): Promise<string> {
           fecha_venc: r.fec_venc,
           total: Number(r.total),
           saldo: Number(r.saldo),
+          total_usd: usdDoc(Number(r.total), r.mone, Number(r.tasa)),
+          saldo_usd: usdDoc(Number(r.saldo), r.mone, Number(r.tasa)),
           dias_vencido: Number(r.dias),
           moneda: MONEDA_DOC(),
         })),
@@ -204,12 +215,13 @@ async function refrescarVentas(): Promise<string> {
      LEFT JOIN profit.saarticulo a ON trim(a.co_art) = trim(r.co_art)
      WHERE coalesce(f.anulado,false) = false AND f.fec_emis IS NOT NULL`,
   )
-  const agg = new Map<string, { mes: string; vendedor: string; categoria: string; unidades: number; monto: number }>()
+  const agg = new Map<string, { mes: string; vendedor: string; categoria: string; unidades: number; monto: number; usd: number }>()
   for (const r of reng.rows) {
     const key = `${r.mes}|${r.vendedor}|${r.categoria}`
-    const a = agg.get(key) ?? { mes: r.mes, vendedor: r.vendedor, categoria: r.categoria, unidades: 0, monto: 0 }
+    const a = agg.get(key) ?? { mes: r.mes, vendedor: r.vendedor, categoria: r.categoria, unidades: 0, monto: 0, usd: 0 }
     a.unidades += Number(r.unidades)
-    a.monto += Number(r.monto) // en Bs; el USD se calcula al mostrar con la tasa BCV
+    a.monto += Number(r.monto) // Bs
+    a.usd += usdDoc(Number(r.monto), r.mone, Number(r.tasa)) ?? 0 // USD a la tasa de la factura
     agg.set(key, a)
   }
   const filas = [...agg.values()].map((a) => ({
@@ -217,7 +229,8 @@ async function refrescarVentas(): Promise<string> {
     vendedor: a.vendedor,
     categoria: a.categoria,
     unidades: Math.round(a.unidades * 100) / 100,
-    monto_usd: Math.round(a.monto * 100) / 100,
+    monto_usd: Math.round(a.monto * 100) / 100, // Bs (nombre legado de la columna)
+    monto_usd_real: Math.round(a.usd * 100) / 100, // USD histórico
     margen_usd: null, // el costo no viaja en la réplica todavía
   }))
   await db.transaction(async (trx) => {
@@ -244,7 +257,8 @@ async function refrescarCompras(): Promise<string> {
     documento: r.documento,
     proveedor: r.proveedor,
     categoria: null,
-    monto_usd: Math.round(Number(r.monto) * 100) / 100, // en Bs (ver nota arriba)
+    monto_usd: Math.round(Number(r.monto) * 100) / 100, // Bs (nombre legado)
+    monto_usd_real: usdDoc(Number(r.monto), r.mone, Number(r.tasa)), // USD histórico
     moneda: MONEDA_DOC(),
   }))
   await db.transaction(async (trx) => {
@@ -262,7 +276,7 @@ async function refrescarCxp(): Promise<string> {
             trim(d.nro_doc) AS documento, trim(d.co_tipo_doc) AS tipo_doc,
             d.fec_emis, d.fec_venc, d.total_neto AS total, d.saldo,
             greatest(0, (current_date - d.fec_venc::date))::int AS dias,
-            trim(coalesce(d.co_mone,'USD')) AS mone
+            coalesce(d.tasa,0) AS tasa, trim(coalesce(d.co_mone,'USD')) AS mone
      FROM profit.sadocumentocompra d
      LEFT JOIN profit.saproveedor p ON trim(p.co_prov) = trim(d.co_prov)
      WHERE coalesce(d.anulado,false) = false AND d.saldo > 0`,
@@ -280,6 +294,8 @@ async function refrescarCxp(): Promise<string> {
           fecha_venc: r.fec_venc,
           total: Number(r.total),
           saldo: Number(r.saldo),
+          total_usd: usdDoc(Number(r.total), r.mone, Number(r.tasa)),
+          saldo_usd: usdDoc(Number(r.saldo), r.mone, Number(r.tasa)),
           dias_vencido: Number(r.dias),
           moneda: MONEDA_DOC(),
         })),

@@ -1586,6 +1586,28 @@ textarea::placeholder {
   margin: 0 0 16px;
 }
 
+/* Nada dentro de un modal debe desbordar horizontalmente (previews, tablas) */
+.modal-card * {
+  max-width: 100%;
+}
+.modal-card img {
+  height: auto;
+}
+
+/* En móvil los modales ocupan casi toda la pantalla y respiran menos padding */
+@media (max-width: 640px) {
+  .modal-backdrop {
+    padding: 10px;
+    align-items: flex-start;
+  }
+  .modal-card {
+    width: 100%;
+    padding: 20px 18px;
+    max-height: 94vh;
+    margin-top: 8px;
+  }
+}
+
 /* ── Usuarios ────────────────────────────────────────────────────────────── */
 
 .user-row-inactivo {

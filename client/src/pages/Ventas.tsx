@@ -1,15 +1,17 @@
 import { useEffect, useState } from 'react'
 import { api } from '../lib/api'
-import { bs, montoDual, etiquetaTasa, useTasa } from '../lib/moneda'
+import { bs, bsUsd, etiquetaTasa, useTasa } from '../lib/moneda'
 
 interface Fila {
   monto: number
+  montoUsd: number
   margenPct: number | null
 }
 interface Resumen {
   hayMargen: boolean
   meses: string[]
   totalUsd: number
+  totalUsdReal: number
   totalMargenPct: number | null
   porMes: (Fila & { mes: string; unidades: number })[]
   porVendedor: (Fila & { vendedor: string })[]
@@ -58,7 +60,7 @@ export function Ventas() {
           <div className="kpi-grid" style={{ gridTemplateColumns: data.hayMargen ? 'repeat(3,1fr)' : 'repeat(2,1fr)' }}>
             <div className="card card-kpi">
               <div className="field-label">Ventas del período ({data.meses.length} meses)</div>
-              <div className="kpi-value" style={{ fontSize: 22 }}>{montoDual(data.totalUsd, tasa)}</div>
+              <div className="kpi-value" style={{ fontSize: 18 }}>{bsUsd(data.totalUsd, data.totalUsdReal)}</div>
             </div>
             {data.hayMargen && (
               <div className="card card-kpi">

@@ -1,15 +1,15 @@
 import { useEffect, useState } from 'react'
 import { api } from '../lib/api'
-import { bs, montoDual, etiquetaTasa, useTasa } from '../lib/moneda'
+import { bs, bsUsd, etiquetaTasa, useTasa } from '../lib/moneda'
 
 interface Resumen {
-  porMes: { mes: string; monto: number; docs: number }[]
-  porProveedor: { proveedor: string; monto: number; docs: number }[]
+  porMes: { mes: string; monto: number; montoUsd: number; docs: number }[]
+  porProveedor: { proveedor: string; monto: number; montoUsd: number; docs: number }[]
   porCategoria: { categoria: string; monto: number }[]
-  ultimas: { fecha: string; documento: string | null; proveedor: string; categoria: string | null; montoUsd: number; moneda: string }[]
+  ultimas: { fecha: string; documento: string | null; proveedor: string; categoria: string | null; montoUsd: number; montoUsdReal: number; moneda: string }[]
   cxp: {
-    proveedores: { proveedor: string; moneda: string; saldo: number; vencido: number; peorDiasVencido: number; documentos: number }[]
-    totales: { saldo: number; vencido: number }
+    proveedores: { proveedor: string; moneda: string; saldo: number; saldoUsd: number; vencido: number; vencidoUsd: number; peorDiasVencido: number; documentos: number }[]
+    totales: { saldo: number; saldoUsd: number; vencido: number; vencidoUsd: number }
   }
   actualizadoCompras: string | null
   actualizadoCxp: string | null
@@ -37,6 +37,7 @@ export function Compras() {
   const sinCompras = data.porMes.length === 0
   const sinCxp = data.cxp.proveedores.length === 0
   const totalCompras = data.porMes.reduce((s, m) => s + m.monto, 0)
+  const totalComprasUsd = data.porMes.reduce((s, m) => s + (m.montoUsd ?? 0), 0)
   const maxMes = Math.max(1, ...data.porMes.map((m) => m.monto))
   const maxProv = Math.max(1, ...data.porProveedor.map((p) => p.monto))
   const colsCxp = '2fr 1fr 1fr 0.8fr 0.8fr'
@@ -64,16 +65,16 @@ export function Compras() {
           <div className="kpi-grid" style={{ gridTemplateColumns: 'repeat(3,1fr)' }}>
             <div className="card card-kpi">
               <div className="field-label">Compras del período ({data.porMes.length} meses)</div>
-              <div className="kpi-value" style={{ fontSize: 19 }}>{montoDual(totalCompras, tasa)}</div>
+              <div className="kpi-value" style={{ fontSize: 17 }}>{bsUsd(totalCompras, totalComprasUsd)}</div>
             </div>
             <div className="card card-kpi">
               <div className="field-label">Por pagar a proveedores</div>
-              <div className="kpi-value" style={{ fontSize: 19 }}>{montoDual(data.cxp.totales.saldo, tasa)}</div>
+              <div className="kpi-value" style={{ fontSize: 17 }}>{bsUsd(data.cxp.totales.saldo, data.cxp.totales.saldoUsd)}</div>
             </div>
             <div className="card card-kpi">
               <div className="field-label">Vencido con proveedores</div>
-              <div className="kpi-value" style={{ fontSize: 19, color: data.cxp.totales.vencido > 0 ? 'var(--danger-500)' : 'var(--success-600)' }}>
-                {montoDual(data.cxp.totales.vencido, tasa)}
+              <div className="kpi-value" style={{ fontSize: 17, color: data.cxp.totales.vencido > 0 ? 'var(--danger-500)' : 'var(--success-600)' }}>
+                {bsUsd(data.cxp.totales.vencido, data.cxp.totales.vencidoUsd)}
               </div>
             </div>
           </div>
