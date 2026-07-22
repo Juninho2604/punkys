@@ -1,4 +1,4 @@
-export type Rol = 'vendedor' | 'cxc' | 'facturacion' | 'despacho' | 'admin'
+export type Rol = 'vendedor' | 'cxc' | 'facturacion' | 'despacho' | 'mercaderista' | 'admin'
 
 export interface User {
   id: number

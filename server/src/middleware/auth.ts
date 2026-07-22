@@ -2,7 +2,7 @@ import type { NextFunction, Request, Response } from 'express'
 import jwt from 'jsonwebtoken'
 import { config } from '../config.js'
 
-export type Rol = 'vendedor' | 'cxc' | 'facturacion' | 'despacho' | 'admin'
+export type Rol = 'vendedor' | 'cxc' | 'facturacion' | 'despacho' | 'mercaderista' | 'admin'
 
 export interface AuthUser {
   id: number

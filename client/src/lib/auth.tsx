@@ -47,5 +47,6 @@ export const ROL_LABEL: Record<string, string> = {
   cxc: 'Cuentas por Cobrar',
   facturacion: 'Facturación',
   despacho: 'Despacho',
+  mercaderista: 'Mercaderista',
   admin: 'Owner',
 }

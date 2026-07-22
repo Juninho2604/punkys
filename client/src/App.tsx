@@ -18,6 +18,8 @@ import { Ventas } from './pages/Ventas'
 import { Comisiones } from './pages/Comisiones'
 import { Compras } from './pages/Compras'
 import { Catalogos } from './pages/Catalogos'
+import { Visitas } from './pages/Visitas'
+import { VisitaNueva } from './pages/VisitaNueva'
 import type { Rol } from './lib/types'
 
 function Protegida({ roles, children }: { roles?: Rol[]; children: React.ReactNode }) {
@@ -49,6 +51,8 @@ function Rutas() {
         <Route path="/cotizacion" element={<Protegida roles={['vendedor']}><Cotizacion /></Protegida>} />
         <Route path="/aprobaciones" element={<Protegida roles={['cxc']}><Aprobaciones /></Protegida>} />
         <Route path="/facturacion" element={<Protegida roles={['facturacion']}><Facturacion /></Protegida>} />
+        <Route path="/visitas" element={<Protegida roles={['mercaderista', 'vendedor']}><Visitas /></Protegida>} />
+        <Route path="/visitas/nueva" element={<Protegida roles={['mercaderista', 'vendedor']}><VisitaNueva /></Protegida>} />
         <Route path="/despacho" element={<Protegida roles={['vendedor', 'despacho']}><Despacho /></Protegida>} />
         <Route path="/despacho/:id" element={<Protegida roles={['vendedor', 'despacho']}><DespachoDetalle /></Protegida>} />
         <Route path="/cuentas-por-cobrar" element={<Protegida roles={['cxc']}><CuentasPorCobrar /></Protegida>} />

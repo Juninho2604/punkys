@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useState } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { BarChart3, Bell, Boxes, CheckCircle, FileText, HandCoins, KeyRound, LayoutGrid, LogOut, Menu, Palette, ChevronLeft, ReceiptText, Search, ShoppingCart, Truck, Users, Wallet } from 'lucide-react'
+import { BarChart3, Bell, Boxes, CheckCircle, FileText, HandCoins, KeyRound, LayoutGrid, LogOut, MapPin, Menu, Palette, ChevronLeft, ReceiptText, Search, ShoppingCart, Truck, Users, Wallet } from 'lucide-react'
 import { ROL_LABEL, useAuth } from '../lib/auth'
 import { api } from '../lib/api'
 import { useToast } from '../lib/toast'
@@ -27,6 +27,7 @@ const NAV: NavItem[] = [
   { to: '/facturacion', label: 'Facturación', icon: ReceiptText, roles: ['facturacion', 'admin'], badge: 'fact' },
   { to: '/cuentas-por-cobrar', label: 'Cuentas por Cobrar', icon: Wallet, roles: ['cxc', 'admin'] },
   { to: '/despacho', label: 'Despacho', icon: Truck, roles: ['vendedor', 'despacho', 'admin'] },
+  { to: '/visitas', label: 'Visitas de campo', icon: MapPin, roles: ['mercaderista', 'vendedor', 'admin'] },
 ]
 
 const TITULOS: Record<string, string> = {
@@ -40,6 +41,7 @@ const TITULOS: Record<string, string> = {
   '/compras': 'Compras & Por Pagar',
   '/catalogos': 'Catálogos operacionales',
   '/despacho': 'Despacho',
+  '/visitas': 'Visitas de campo',
   '/usuarios': 'Usuarios',
   '/sistema-diseno': 'Sistema de Diseño',
 }
