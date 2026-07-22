@@ -465,7 +465,13 @@ textarea::placeholder {
   gap: 4px;
   padding: 14px 10px;
   flex: 1;
+  min-height: 0; /* permite que el nav encoja y active el scroll */
+  overflow-y: auto; /* si hay más módulos que altura de pantalla, el menú hace scroll */
+  overflow-x: hidden;
 }
+/* Scrollbar discreta dentro del sidebar oscuro */
+.sidebar-nav::-webkit-scrollbar { width: 6px; }
+.sidebar-nav::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.18); border-radius: 3px; }
 
 .sidebar-item {
   display: flex;
