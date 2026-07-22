@@ -53,14 +53,16 @@ textarea::placeholder {
   color: var(--ink-300);
 }
 
+/* Solo opacidad: un transform persistente (aunque sea translateY(0)) crea un
+   "containing block" que rompe el position:fixed de los modales que estén
+   dentro (aparecían al fondo de la página). Sin transform, los modales se
+   centran siempre respecto a la pantalla. */
 @keyframes fadeUp {
   from {
     opacity: 0;
-    transform: translateY(8px);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
   }
 }
 
