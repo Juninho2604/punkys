@@ -132,7 +132,7 @@ async function refrescarCxc(): Promise<string> {
             nullif(trim(v.ven_des),'') AS vendedor,
             d.fec_emis, d.fec_venc, d.total_neto AS total, d.saldo,
             greatest(0, (current_date - d.fec_venc::date))::int AS dias,
-            coalesce(d.tasa,0) AS tasa, trim(coalesce(d.co_mone,'USD')) AS mone
+            coalesce(d.tasa,0) AS tasa, trim(coalesce(d.co_mone,'Bs')) AS mone
      FROM profit.sadocumentoventa d
      LEFT JOIN profit.sacliente c ON trim(c.co_cli) = trim(d.co_cli)
      LEFT JOIN profit.savendedor v ON trim(v.co_ven) = trim(d.co_ven)
@@ -172,7 +172,7 @@ async function refrescarCobranzas(): Promise<string> {
     `SELECT b.fecha::date AS fecha, trim(b.cob_num) AS documento,
             coalesce(nullif(trim(c.cli_des),''), trim(b.co_cli)) AS cliente,
             nullif(trim(v.ven_des),'') AS vendedor,
-            b.monto, coalesce(b.tasa,0) AS tasa, trim(coalesce(b.co_mone,'USD')) AS mone
+            b.monto, coalesce(b.tasa,0) AS tasa, trim(coalesce(b.co_mone,'Bs')) AS mone
      FROM profit.sacobro b
      LEFT JOIN profit.sacliente c ON trim(c.co_cli) = trim(b.co_cli)
      LEFT JOIN profit.savendedor v ON trim(v.co_ven) = trim(b.co_ven)
@@ -215,7 +215,7 @@ async function refrescarVentas(): Promise<string> {
             coalesce(nullif(trim(v.ven_des),''), 'Sin vendedor') AS vendedor,
             coalesce(nullif(trim(a.co_lin),''), 'otros') AS categoria,
             r.total_art AS unidades, r.reng_neto AS monto,
-            coalesce(f.tasa,0) AS tasa, trim(coalesce(f.co_mone,'USD')) AS mone
+            coalesce(f.tasa,0) AS tasa, trim(coalesce(f.co_mone,'Bs')) AS mone
      FROM profit.safacturaventareng r
      JOIN profit.safacturaventa f ON trim(f.doc_num) = trim(r.doc_num)
      LEFT JOIN profit.savendedor v ON trim(v.co_ven) = trim(f.co_ven)
@@ -254,7 +254,7 @@ async function refrescarCompras(): Promise<string> {
     `SELECT f.fec_emis::date AS fecha,
             coalesce(nullif(trim(f.nro_fact),''), trim(f.doc_num)) AS documento,
             coalesce(nullif(trim(p.prov_des),''), trim(f.co_prov)) AS proveedor,
-            f.total_neto AS monto, coalesce(f.tasa,0) AS tasa, trim(coalesce(f.co_mone,'USD')) AS mone
+            f.total_neto AS monto, coalesce(f.tasa,0) AS tasa, trim(coalesce(f.co_mone,'Bs')) AS mone
      FROM profit.safacturacompra f
      LEFT JOIN profit.saproveedor p ON trim(p.co_prov) = trim(f.co_prov)
      WHERE coalesce(f.anulado,false) = false AND f.fec_emis IS NOT NULL`,
@@ -283,7 +283,7 @@ async function refrescarCxp(): Promise<string> {
             trim(d.nro_doc) AS documento, trim(d.co_tipo_doc) AS tipo_doc,
             d.fec_emis, d.fec_venc, d.total_neto AS total, d.saldo,
             greatest(0, (current_date - d.fec_venc::date))::int AS dias,
-            coalesce(d.tasa,0) AS tasa, trim(coalesce(d.co_mone,'USD')) AS mone
+            coalesce(d.tasa,0) AS tasa, trim(coalesce(d.co_mone,'Bs')) AS mone
      FROM profit.sadocumentocompra d
      LEFT JOIN profit.saproveedor p ON trim(p.co_prov) = trim(d.co_prov)
      WHERE coalesce(d.anulado,false) = false AND d.saldo > 0`,
