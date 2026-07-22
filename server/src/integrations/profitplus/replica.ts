@@ -1,6 +1,7 @@
 import { db } from '../../db/knex.js'
 import { config } from '../../config.js'
 import { normalizarNombre } from '../../services/normalize.js'
+import { obtenerTasa } from '../../services/tasaCambio.js'
 import { PipelineProfitPlusConnector } from './pipeline.js'
 import type { PPStatus } from './types.js'
 
@@ -22,18 +23,24 @@ import type { PPStatus } from './types.js'
 const REFRESH_MS = 5 * 60_000
 const MONEDA_DOC = () => config.profitPlus.replica.moneda
 
+// Moneda vacía = Bs (moneda base de Profit), NO USD. Solo es USD si lo dice.
 function esUsd(mone: string): boolean {
   const m = mone.toUpperCase()
-  return m === '' || m.includes('USD') || m.includes('US$') || m === '$' || m.includes('DOL')
+  return m.includes('USD') || m.includes('US$') || m === '$' || m.includes('DOL')
 }
 
-// USD histórico: si el documento ya está en USD, el monto es el USD; si está en
-// Bs, se divide entre la tasa CON QUE SE FACTURÓ (la del documento en Profit).
-// Sin tasa válida no se puede calcular → null (la vista lo trata como desconocido).
-function usdDoc(montoBs: number, mone: string, tasa: number): number | null {
+// Tasa Bs/USD del momento del refresco (BCV de hoy), como respaldo cuando el
+// documento no trae una tasa real (muchos Profit operan en Bs con tasa=1).
+let tasaHoy = 0
+
+// USD equivalente de un documento en Bs:
+//  1. Si el documento ya está en USD → ese es el monto.
+//  2. Si trae una tasa REAL de facturación (> 1) → Bs ÷ esa tasa (USD histórico).
+//  3. Si no (tasa 1 o ausente) → Bs ÷ tasa BCV de hoy (estimado actual).
+function usdDoc(montoBs: number, mone: string, tasaDoc: number): number | null {
   if (esUsd(mone)) return Math.round(montoBs * 100) / 100
-  if (tasa > 0) return Math.round((montoBs / tasa) * 100) / 100
-  return null
+  const t = tasaDoc > 1 ? tasaDoc : tasaHoy
+  return t > 0 ? Math.round((montoBs / t) * 100) / 100 : null
 }
 
 async function replicaDisponible(): Promise<boolean> {
@@ -317,6 +324,8 @@ export async function refrescarDesdeReplica(): Promise<{ ok: boolean; detalle: s
     if (!(await replicaDisponible())) {
       return { ok: false, detalle: 'El esquema profit no existe aún (¿punky-sync ha corrido?)' }
     }
+    // Tasa BCV de hoy: respaldo para el USD de documentos sin tasa real
+    tasaHoy = (await obtenerTasa()).valor || 0
     const partes: string[] = []
     for (const paso of [refrescarProductos, refrescarCxc, refrescarCobranzas, refrescarVentas, refrescarCompras, refrescarCxp]) {
       try {
