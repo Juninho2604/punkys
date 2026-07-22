@@ -135,3 +135,45 @@ plan B por Excel); no borrar por si acaso, pero ya no se usan.
 - ❌ v1 truncaba tablas `full` fuera de transacción (lectores veían la tabla
   vacía unos segundos) → ahora cada tabla va en transacción.
 - ➕ Tablas de precios/cobros/compras añadidas al config.
+
+## Incidentes resueltos en producción (2026-07-22)
+
+### 1. `saArtPrecio` llegaba con 0 filas (sin precios → nada cotizable)
+
+- **Síntoma**: `profit.saartprecio` en 0 aunque en el SQL Server tiene 917
+  filas. `profit._sync_log` mostraba
+  `ON CONFLICT DO UPDATE command cannot affect row a second time`.
+- **Causa**: en `tables.config.js` la llave era `["co_art", "co_precio"]`, que
+  **no es única** en esa tabla (un artículo tiene varios precios por lista
+  `co_precio`, almacén `co_alma_calculado` y rango `desde`/`hasta`; la PK real
+  es `(co_art, co_precio, co_alma_calculado, desde)`). El UPSERT por lotes veía
+  dos filas con la misma llave en el mismo lote y reventaba.
+- **Arreglo**: cambiar la llave a `["rowguid"]` (columna única y universal en
+  Profit; verificado 917 distintos, 0 nulos).
+- **⚠️ Gotcha del motor**: `sync.js` crea el índice único con nombre **fijo**
+  `ux_<tabla>_key` usando `CREATE UNIQUE INDEX IF NOT EXISTS`. Al cambiar la
+  llave, el `IF NOT EXISTS` **no recrea** el índice sobre las columnas nuevas —
+  hay que soltarlo a mano una vez para que se regenere:
+  `DROP INDEX IF EXISTS profit.ux_saartprecio_key;` en el VPS.
+- **Nota**: solo ~29 de 133 artículos tienen precio en Profit (24 vigentes);
+  el resto no tiene precio cargado en el ERP. No es problema del sync: si se
+  quieren más productos cotizables, hay que cargar sus precios en Profit.
+
+### 2. Tablas que no existen en esta versión de Profit
+
+`saCobroReng`, `saLinea` y `saCategoria` dan
+`Tabla no encontrada en SQL Server` (los cobros no tienen tabla de renglones
+aparte; línea/categoría se leen del propio artículo `co_lin`). El
+materializador no las usa → conviene quitarlas del `tables.config.js` para no
+ensuciar el log.
+
+### 3. El túnel `cloudflared access tcp` se caía
+
+- **Causa**: se estaba sosteniendo con una **ventana de PowerShell abierta**
+  (proceso en primer plano). Al cerrarla, moría el listener de `127.0.0.1:5432`
+  → el sync daba `ECONNREFUSED`.
+- **Arreglo**: la tarea programada **`PunkyTunnel`** lo levanta headless
+  (cuenta **SYSTEM**, **Highest**, disparador **al iniciar Windows**). Además
+  se corrigió `ExecutionTimeLimit` de `PT72H` (lo mataba a los 3 días) a
+  **`PT0S`** (sin límite) y se activó reintento (`RestartCount=3`,
+  `RestartInterval=PT1M`). Ya sobrevive cierres de ventana y reinicios.
