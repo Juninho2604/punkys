@@ -71,7 +71,8 @@ quotesRouter.get('/:id(\\d+)', async (req, res, next) => {
       return
     }
     const items = await db('quote_items').where({ quote_id: quote.id }).orderBy('id')
-    res.json({ quote: { ...quote, items } })
+    const historial = await db('quote_estado_log').where({ quote_id: quote.id }).orderBy('created_at', 'asc')
+    res.json({ quote: { ...quote, items, historial } })
   } catch (err) {
     next(err)
   }

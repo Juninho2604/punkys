@@ -8,9 +8,22 @@ import { SERVICIO_NOMBRE } from './Cotizacion'
 // Hoja formal imprimible de la cotización (tamaño carta, blanco y negro).
 // Espacios de firma: Director y Gerente de Cuentas por Cobrar.
 
+interface EventoEstado {
+  estado_anterior: string | null
+  estado_nuevo: string
+  usuario_nombre: string | null
+  nota: string | null
+  created_at: string
+}
 interface QuoteConVendedor extends Quote {
   vendedor?: string
   decidido_por?: string
+  historial?: EventoEstado[]
+}
+
+const ESTADO_LABEL: Record<string, string> = {
+  generada: 'Pedido creado', pendiente: 'En Cuentas por Cobrar', aprobada: 'Aprobado',
+  rechazada: 'Rechazado', facturada: 'Facturado',
 }
 
 const fmtNum = (n: string | number, dec = 2) =>
@@ -196,6 +209,23 @@ export function ImprimirCotizacion() {
           Montos expresados en bolívares (Bs.). Cotización sujeta a aprobación por el área de
           Cuentas por Cobrar. Referencia ERP: {quote.pp_external_ref ?? 'pendiente de sincronización'}.
         </p>
+
+        {/* Bitácora de estados del pedido */}
+        {quote.historial && quote.historial.length > 0 && (
+          <section className="ps-historial">
+            <h3 className="ps-h3">Historial del pedido</h3>
+            <ul>
+              {quote.historial.map((h, i) => (
+                <li key={i}>
+                  <strong>{ESTADO_LABEL[h.estado_nuevo] ?? h.estado_nuevo}</strong>
+                  {h.usuario_nombre ? ` · ${h.usuario_nombre}` : ''}
+                  {' · '}{new Date(h.created_at).toLocaleString('es-VE')}
+                  {h.nota ? ` — ${h.nota}` : ''}
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
 
         {/* Firmas */}
         <footer className="ps-firmas">

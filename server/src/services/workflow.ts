@@ -9,6 +9,31 @@ import { profitPlus } from '../integrations/profitplus/index.js'
 
 export const MILESTONES = ['Orden creada', 'Preparando carga', 'Despachado', 'En tránsito', 'Entregado'] as const
 
+// Bitácora de estados: registra cada transición de un pedido/cotización.
+// Acepta una transacción (trx) o el db global. Nunca rompe el flujo.
+type Db = typeof db
+export async function logEstado(
+  ctx: Db,
+  quoteId: number,
+  anterior: string | null,
+  nuevo: string,
+  user: AuthUser | null,
+  nota?: string,
+): Promise<void> {
+  try {
+    await ctx('quote_estado_log').insert({
+      quote_id: quoteId,
+      estado_anterior: anterior,
+      estado_nuevo: nuevo,
+      usuario_id: user?.id ?? null,
+      usuario_nombre: user?.nombre ?? null,
+      nota: nota ?? null,
+    })
+  } catch (err) {
+    console.error('No se pudo registrar el cambio de estado:', err)
+  }
+}
+
 export function estadoFromDone(done: number, incidencia: boolean): string {
   if (incidencia) return 'Incidencia'
   if (done >= 5) return 'Entregado'
@@ -119,6 +144,7 @@ export async function crearCotizacion(datos: NuevaCotizacion, user: AuthUser) {
       .returning('*')
 
     await trx('quote_items').insert(renglones.map((r) => ({ ...r, quote_id: quote.id })))
+    await logEstado(trx, quote.id, null, 'generada', user, 'Pedido creado por el vendedor')
     return { ...quote, items: renglones }
   })
 }
@@ -163,6 +189,8 @@ export async function enviarAAprobacion(quoteId: number, user: AuthUser) {
     })
     .returning('*')
 
+  await logEstado(db, quoteId, 'generada', 'pendiente', user, 'Enviado a Cuentas por Cobrar')
+
   // Aviso automático al equipo de Cuentas por Cobrar
   const info = quoteInfo(updated, user.nombre, items)
   const cxcUsers = await db('users').whereIn('rol', ['cxc']).andWhere('activo', true)
@@ -193,6 +221,8 @@ export async function decidirCotizacion(
       updated_at: db.fn.now(),
     })
     .returning('*')
+
+  await logEstado(db, quoteId, 'pendiente', decision, user, decision === 'rechazada' ? (motivo ?? 'Rechazada') : 'Aprobada por CxC')
 
   const vendedor = await db('users').where({ id: quote.created_by }).first()
   const client = quote.client_id ? await db('clients').where({ id: quote.client_id }).first() : null
@@ -254,6 +284,8 @@ export async function facturarCotizacion(quoteId: number, facturaNumero: string,
     })
     .returning('*')
 
+  await logEstado(db, quoteId, 'aprobada', 'facturada', user, `Factura ${facturaNumero} emitida`)
+
   const client = quote.client_id ? await db('clients').where({ id: quote.client_id }).first() : null
   const vendedor = await db('users').where({ id: quote.created_by }).first()
   const items = await itemsDe(quoteId)
@@ -307,6 +339,7 @@ export async function devolverAPendiente(quoteId: number) {
     .where({ id: quoteId })
     .update({ estado: 'pendiente', decided_by: null, decided_at: null, motivo_rechazo: null, updated_at: db.fn.now() })
     .returning('*')
+  await logEstado(db, quoteId, quote.estado, 'pendiente', null, 'Devuelta a pendiente')
   return updated
 }
 
