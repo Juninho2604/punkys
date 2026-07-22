@@ -20,7 +20,7 @@ export async function saldoDeClientes(nombres: string[]): Promise<Map<string, Sa
     .groupBy('cliente_norm', 'moneda')
     .select('cliente_norm', 'moneda')
     .sum({ saldo: 'saldo' })
-    .sum({ vencido: db.raw('case when dias_vencido > 0 then saldo else 0 end') })
+    .sum({ vencido: db.raw('case when dias_vencido > 0 and saldo > 0 then saldo else 0 end') })
     .count({ documentos: '*' })
     .max({ peor: 'dias_vencido' })
 

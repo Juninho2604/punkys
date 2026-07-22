@@ -3,6 +3,7 @@ import { config } from './config.js'
 import { iniciarRefrescoReplica } from './integrations/profitplus/replica.js'
 import { iniciarRefrescoTasa } from './services/tasaCambio.js'
 import { iniciarSincronizacionSheets } from './integrations/sheets/index.js'
+import { iniciarCxcDiario } from './services/cxcDiario.js'
 
 const app = createApp()
 
@@ -15,4 +16,6 @@ app.listen(config.port, () => {
   iniciarRefrescoTasa()
   // Espejo de los catálogos de la intranet-Sheets del cliente (si hay URLs)
   iniciarSincronizacionSheets()
+  // Correo diario de CxC por vendedor (7am hora del servidor)
+  iniciarCxcDiario()
 })

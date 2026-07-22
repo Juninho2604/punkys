@@ -120,7 +120,7 @@ async function refrescarCxc(): Promise<string> {
      FROM profit.sadocumentoventa d
      LEFT JOIN profit.sacliente c ON trim(c.co_cli) = trim(d.co_cli)
      LEFT JOIN profit.savendedor v ON trim(v.co_ven) = trim(d.co_ven)
-     WHERE coalesce(d.anulado,false) = false AND d.saldo > 0`,
+     WHERE coalesce(d.anulado,false) = false AND d.saldo <> 0`,
   )
   await db.transaction(async (trx) => {
     await trx('pp_cxc').del()

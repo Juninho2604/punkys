@@ -51,6 +51,20 @@ export const notifier = {
     await log('email', result.proveedor, to, subject, text, meta, result.estado, result.error)
   },
 
+  // Igual que email() pero con HTML propio (para correos con formato rico,
+  // ej. el CxC diario). `text` es el respaldo en texto plano para el log.
+  async emailHtml(to: string, subject: string, html: string, text: string, meta: Meta): Promise<'simulado' | 'enviado' | 'error'> {
+    if (!to) return 'error'
+    let result
+    try {
+      result = await emailProvider.send({ to, subject, text, html })
+    } catch (err) {
+      result = { ok: false, proveedor: emailProvider.nombre, estado: 'error' as const, error: String(err) }
+    }
+    await log('email', result.proveedor, to, subject, text, meta, result.estado, result.error)
+    return result.estado
+  },
+
   async whatsapp(to: string, body: string, meta: Meta): Promise<void> {
     if (!to) return
     let result

@@ -82,6 +82,19 @@ por vendedor con antigüedad + notas.
 - Datasets Drive por ID en ScriptProperties (VENTAS_JSON_ID, CATALOGO_JSON_ID,
   CXC_JSON_ID, PAGOS_JSON_ID, BANCOS_JSON_ID, COSTOS_JSON_ID, LISTA_PRECIOS_JSON_ID).
 
+## Ola en progreso
+
+- ✅ **Correo diario de CxC** (Fase 9): réplica mejorada de `enviarCxcDiario`.
+  Servicio `services/cxcDiario.ts` arma por vendedor el HTML con antigüedad
+  (1–30/31–60/+60), "vence en 7 días", créditos a favor, agrupado por cliente
+  (más vencido primero) y **notas de cobranza colaborativas** (tabla
+  `cxc_notas`, editables desde el panel de CxC). Montos en Bs con equivalente
+  USD (BCV). Se programa 7am (`CXC_DIARIO_HORA`); admin puede previsualizar y
+  enviar a demanda (`/api/cxc/diario/preview` y `/enviar`). Correo por vendedor
+  se resuelve de `cxc_vendedor_correo` o del email del usuario. Envío real por
+  SMTP (Google Workspace recomendado); en modo consola queda registrado.
+  ⚠️ Incluye créditos: la réplica de CxC pasó a `saldo <> 0`.
+
 ## Cómo lo mejoramos (resumen)
 Nuestra intranet ya supera lo administrativo (lee Profit en vivo por réplica,
 no por JSON cacheado; auth propia sin depender de Supabase). Lo que falta es
