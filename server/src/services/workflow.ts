@@ -144,7 +144,9 @@ export async function crearCotizacion(datos: NuevaCotizacion, user: AuthUser) {
       .returning('*')
 
     await trx('quote_items').insert(renglones.map((r) => ({ ...r, quote_id: quote.id })))
-    await logEstado(trx, quote.id, null, 'generada', user, 'Pedido creado por el vendedor')
+    // "Recibido": el vendedor cargó el pedido. Queda como marca inicial; el
+    // pedido pasa enseguida a Cuentas por Cobrar (ver ruta POST /quotes).
+    await logEstado(trx, quote.id, null, 'generada', user, 'Pedido recibido (cargado por el vendedor)')
     return { ...quote, items: renglones }
   })
 }

@@ -1,9 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { Search, Plus, Minus, X } from 'lucide-react'
 import { api } from '../lib/api'
 import { fmtBs } from '../lib/format'
-import { useAuth } from '../lib/auth'
 import { useToast } from '../lib/toast'
 import { usePend } from '../components/Shell'
 import type { Producto, Quote } from '../lib/types'
@@ -47,9 +45,7 @@ interface Renglon {
 }
 
 export function Cotizacion() {
-  const { user } = useAuth()
   const toast = useToast()
-  const navigate = useNavigate()
   const { refreshPend } = usePend()
   const [paso, setPaso] = useState(0)
   const [form, setForm] = useState<Form>(FORM_INICIAL)
@@ -171,23 +167,10 @@ export function Cotizacion() {
         items: items.map((i) => ({ codigo: i.codigo, cantidad: i.cantidad })),
       })
       setGenerada(r.quote)
-    } catch (err) {
-      toast(err instanceof Error ? err.message : 'No se pudo generar la cotización')
-    } finally {
-      setOcupado(false)
-    }
-  }
-
-  async function enviarAprobacion() {
-    if (!generada) return
-    setOcupado(true)
-    try {
-      await api.post(`/quotes/${generada.id}/submit`)
-      toast(`${generada.numero} enviada a aprobación ✓`)
       refreshPend()
-      navigate(user?.rol === 'vendedor' ? '/' : '/aprobaciones')
     } catch (err) {
-      toast(err instanceof Error ? err.message : 'No se pudo enviar')
+      toast(err instanceof Error ? err.message : 'No se pudo generar el pedido')
+    } finally {
       setOcupado(false)
     }
   }
@@ -221,17 +204,19 @@ export function Cotizacion() {
           <div style={{ width: 72, height: 72, borderRadius: '50%', background: 'var(--success-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 18px' }}>
             <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="var(--success-600)" strokeWidth="2.6"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
           </div>
-          <h2 style={{ font: '700 24px var(--font-display)', color: 'var(--brand-900)', margin: '0 0 6px' }}>¡Cotización generada!</h2>
+          <h2 style={{ font: '700 24px var(--font-display)', color: 'var(--brand-900)', margin: '0 0 6px' }}>¡Pedido recibido!</h2>
           <p className="subtitle" style={{ margin: '0 0 6px' }}>
             Número <b style={{ color: 'var(--brand-800)' }}>{generada.numero}</b> · {generada.razon_social}
           </p>
+          <p className="subtitle" style={{ margin: '0 0 4px', color: 'var(--success-600)', fontWeight: 700 }}>
+            Ya está en Cuentas por Cobrar ✓
+          </p>
           <div style={{ font: '700 30px var(--font-display)', color: 'var(--brand-900)', margin: '14px 0 26px' }}>{fmtBs(generada.total)}</div>
           <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
-            <button className="btn btn-secondary" onClick={reset}>Nueva cotización</button>
+            <button className="btn btn-primary" onClick={reset}>Nuevo pedido</button>
             <button className="btn btn-secondary" onClick={() => window.open(`/cotizaciones/${generada.id}/imprimir`, '_blank')}>
               🖨 Imprimir
             </button>
-            <button className="btn btn-primary" onClick={enviarAprobacion} disabled={ocupado}>Enviar a aprobación →</button>
           </div>
         </div>
       </div>

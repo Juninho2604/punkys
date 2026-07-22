@@ -102,8 +102,11 @@ const nuevaSchema = z.object({
 quotesRouter.post('/', requireRole('vendedor'), async (req, res, next) => {
   try {
     const datos = nuevaSchema.parse(req.body)
-    const quote = await crearCotizacion(datos, req.user!)
-    res.status(201).json({ quote })
+    const creada = await crearCotizacion(datos, req.user!)
+    // Flujo del cliente: el pedido "Recibido" pasa de una vez a Cuentas por
+    // Cobrar (el vendedor no tiene que enviarlo aparte).
+    const quote = await enviarAAprobacion(creada.id, req.user!)
+    res.status(201).json({ quote: { ...quote, items: creada.items } })
   } catch (err) {
     next(err)
   }
