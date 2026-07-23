@@ -270,6 +270,38 @@ async function refrescarVentas(): Promise<string> {
   return `ventas ${filas.length}`
 }
 
+// ── Demanda por SKU: safacturaventa(+reng) → pp_ventas_sku (co_art × semana) ──
+// Insumo del motor de reposición. Unidades solo de facturas (las notas de
+// crédito no representan demanda). Se guarda la última ~2 años de historia.
+async function refrescarVentasSku(): Promise<string> {
+  const reng = await db.raw(
+    `SELECT trim(r.co_art) AS codigo,
+            coalesce(nullif(trim(a.art_des),''), trim(r.co_art)) AS nombre,
+            date_trunc('week', f.fec_emis)::date AS semana,
+            sum(r.total_art) AS unidades, sum(r.reng_neto) AS monto
+     FROM profit.safacturaventareng r
+     JOIN profit.safacturaventa f ON trim(f.doc_num) = trim(r.doc_num)
+     LEFT JOIN profit.saarticulo a ON trim(a.co_art) = trim(r.co_art)
+     WHERE coalesce(f.anulado,false) = false AND f.fec_emis IS NOT NULL
+       AND f.fec_emis >= (current_date - interval '104 weeks')
+       AND trim(coalesce(r.co_art,'')) <> ''
+     GROUP BY 1, 2, 3`,
+  )
+  const filas = reng.rows.map((r: any) => ({
+    codigo: r.codigo,
+    nombre: r.nombre,
+    semana: r.semana,
+    unidades: Math.round(Number(r.unidades) * 100) / 100,
+    monto: Math.round(Number(r.monto) * 100) / 100,
+  }))
+  await db.transaction(async (trx) => {
+    await trx('pp_ventas_sku').del()
+    if (filas.length) await trx.batchInsert('pp_ventas_sku', filas, 500)
+    await trx('sync_log').insert({ dataset: 'ventas_sku', fuente: 'réplica Profit', registros: filas.length })
+  })
+  return `ventas_sku ${filas.length}`
+}
+
 // ── Compras: safacturacompra → pp_compras ────────────────────────────────────
 async function refrescarCompras(): Promise<string> {
   const compras = await db.raw(
@@ -350,7 +382,7 @@ export async function refrescarDesdeReplica(): Promise<{ ok: boolean; detalle: s
     tasaHoy = (await obtenerTasa()).valor || 0
     histTasas = await obtenerHistorial()
     const partes: string[] = []
-    for (const paso of [refrescarProductos, refrescarCxc, refrescarCobranzas, refrescarVentas, refrescarCompras, refrescarCxp]) {
+    for (const paso of [refrescarProductos, refrescarCxc, refrescarCobranzas, refrescarVentas, refrescarVentasSku, refrescarCompras, refrescarCxp]) {
       try {
         partes.push(await paso())
       } catch (err) {
