@@ -62,7 +62,7 @@ export function Compras() {
         </div>
       ) : (
         <>
-          <div className="kpi-grid" style={{ gridTemplateColumns: 'repeat(3,1fr)' }}>
+          <div className="kpi-grid-auto">
             <div className="card card-kpi">
               <div className="field-label">Compras del período ({data.porMes.length} meses)</div>
               <div className="kpi-value" style={{ fontSize: 17 }}>{bsUsd(totalCompras, totalComprasUsd)}</div>
@@ -82,15 +82,17 @@ export function Compras() {
           {!sinCompras && (
             <div className="card" style={{ padding: 22 }}>
               <div className="h3-card" style={{ marginBottom: 16 }}>Compras por mes</div>
-              <div style={{ display: 'flex', alignItems: 'flex-end', gap: 16, height: 200, paddingBottom: 8 }}>
-                {data.porMes.map((m) => (
-                  <div key={m.mes} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, height: '100%', justifyContent: 'flex-end' }}>
-                    <span style={{ font: '700 12px var(--font-ui)', color: 'var(--ink-500)' }}>{usd(m.monto)}</span>
-                    <div style={{ width: '100%', maxWidth: 70, height: `${(m.monto / maxMes) * 100}%`, minHeight: 4, background: 'linear-gradient(180deg,var(--accent-500),var(--brand-800))', borderRadius: '8px 8px 0 0' }} />
-                    <span className="caption">{mesLabel(m.mes)}</span>
-                    <span className="caption">{m.docs} doc{m.docs === 1 ? '' : 's'}</span>
-                  </div>
-                ))}
+              <div className="bars-scroll">
+                <div className="bars" style={{ minWidth: data.porMes.length * 56 }}>
+                  {data.porMes.map((m) => (
+                    <div key={m.mes} className="bar-col">
+                      <span className="bar-val">{usd(m.monto)}</span>
+                      <div className="bar-fill" style={{ height: `${(m.monto / maxMes) * 100}%`, background: 'linear-gradient(180deg,var(--accent-500),var(--brand-800))' }} />
+                      <span className="caption">{mesLabel(m.mes)}</span>
+                      <span className="caption">{m.docs} doc{m.docs === 1 ? '' : 's'}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           )}

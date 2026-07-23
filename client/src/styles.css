@@ -306,6 +306,53 @@ textarea::placeholder {
   margin-top: 8px;
 }
 
+/* Grilla de KPIs que se reacomoda sola: en móvil pasa a 2 y luego 1 columna
+   sin necesidad de sobre-escribir gridTemplateColumns por página. */
+.kpi-grid-auto {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(155px, 1fr));
+  gap: 18px;
+}
+
+/* Gráfica de barras: en pantallas angostas hace scroll horizontal PROPIO
+   (con min-width según el número de barras) en vez de desbordar la página. */
+.bars-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 16px;
+  height: 200px;
+  padding-bottom: 8px;
+}
+
+.bars .bar-col {
+  flex: 1;
+  min-width: 44px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  height: 100%;
+  justify-content: flex-end;
+}
+
+.bars .bar-val {
+  font: 700 12px var(--font-ui);
+  color: var(--ink-500);
+  white-space: nowrap;
+}
+
+.bars .bar-fill {
+  width: 100%;
+  max-width: 70px;
+  min-height: 4px;
+  border-radius: 8px 8px 0 0;
+}
+
 /* ── Tablas ──────────────────────────────────────────────────────────────── */
 
 .table-head {
@@ -1118,8 +1165,20 @@ textarea::placeholder {
 
   .header-admin {
     padding: env(safe-area-inset-top, 0px) max(14px, env(safe-area-inset-right, 0px)) 0 max(14px, env(safe-area-inset-left, 0px));
-    gap: 12px;
+    gap: 10px;
   }
+
+  /* El breadcrumb "Inicio / X" es redundante con el título en pantallas
+     chicas y provocaba solapamiento. Solo se muestra el título. */
+  .header-breadcrumb {
+    display: none;
+  }
+
+  /* "Instalar app" pasa a solo-ícono en el header (el texto ocupaba de más). */
+  .install-label {
+    display: none;
+  }
+
 
   .main-content {
     padding: 14px;
@@ -1177,8 +1236,19 @@ textarea::placeholder {
   }
 
   .header-profile {
-    padding-left: 10px;
-    gap: 8px;
+    padding-left: 8px;
+    gap: 6px;
+  }
+
+  /* La campana es decorativa (sin panel de notificaciones aún); en teléfono
+     se oculta para dar aire al header. */
+  .header-bell {
+    display: none;
+  }
+
+  /* Números KPI muy largos (montos en Bs) no deben desbordar la tarjeta. */
+  .card-kpi .kpi-value {
+    font-size: 22px;
   }
 
   /* Navegación del wizard (Anterior/Siguiente): botones más grandes y

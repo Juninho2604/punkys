@@ -125,7 +125,7 @@ export function CuentasPorCobrar() {
         </div>
       ) : (
         <>
-          <div className="kpi-grid" style={{ gridTemplateColumns: 'repeat(3,1fr)' }}>
+          <div className="kpi-grid-auto">
             <div className="card card-kpi">
               <div className="field-label">Saldo total por cobrar</div>
               <div className="kpi-value" style={{ fontSize: 20 }}>{bsUsd(data.totales.saldo, data.totales.saldoUsd)}</div>

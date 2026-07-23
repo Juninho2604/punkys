@@ -39,8 +39,8 @@ export function InstallApp() {
 
   return (
     <>
-      <button className="btn btn-secondary" style={{ padding: '8px 12px', fontSize: 13, display: 'inline-flex', alignItems: 'center', gap: 6 }} onClick={instalar}>
-        <Download size={15} strokeWidth={2.4} /> Instalar app
+      <button className="btn btn-secondary" title="Instalar app" style={{ padding: '8px 12px', fontSize: 13, display: 'inline-flex', alignItems: 'center', gap: 6 }} onClick={instalar}>
+        <Download size={15} strokeWidth={2.4} /> <span className="install-label">Instalar app</span>
       </button>
       {ayudaIOS && (
         <div className="modal-backdrop" onClick={() => setAyudaIOS(false)}>

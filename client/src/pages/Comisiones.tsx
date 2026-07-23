@@ -132,7 +132,7 @@ export function Comisiones() {
         </div>
       ) : (
         <>
-          <div className="kpi-grid" style={{ gridTemplateColumns: 'repeat(3,1fr)' }}>
+          <div className="kpi-grid-auto">
             <div className="card card-kpi">
               <div className="field-label">Cobrado en la quincena</div>
               <div className="kpi-value" style={{ fontSize: 20 }}>{montoDual(data.totales.baseUsd, tasa)}</div>
