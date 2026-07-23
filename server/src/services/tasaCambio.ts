@@ -87,6 +87,33 @@ export async function fijarTasaManual(valor: number): Promise<Tasa> {
   return { ...fila, obtenidaAt: new Date().toISOString() }
 }
 
+// Historial de tasas (ascendente por fecha) para calcular el USD de documentos
+// viejos a la tasa que había ese día, no a la de hoy.
+export async function obtenerHistorial(): Promise<{ fecha: string; valor: number }[]> {
+  const rows = await db('tasa_cambio').whereNotNull('fecha').orderBy('fecha', 'asc').select('fecha', 'valor')
+  return rows.map((r) => ({ fecha: String(r.fecha).slice(0, 10), valor: Number(r.valor) }))
+}
+
+// Normaliza una fecha (Date o texto) a 'YYYY-MM-DD'.
+function isoDia(v: unknown): string {
+  if (v instanceof Date) return v.toISOString().slice(0, 10)
+  return String(v ?? '').slice(0, 10)
+}
+
+// Tasa vigente en (o justo antes de) una fecha. Si la fecha es anterior a todo
+// el historial, usa la más antigua conocida; si no hay historial, el respaldo.
+export function tasaParaFecha(historial: { fecha: string; valor: number }[], fecha: unknown, fallback: number): number {
+  if (!historial.length) return fallback
+  const f = isoDia(fecha)
+  if (!f) return fallback
+  let val = 0
+  for (const h of historial) {
+    if (h.fecha <= f) val = h.valor
+    else break
+  }
+  return val > 0 ? val : historial[0].valor || fallback
+}
+
 export function iniciarRefrescoTasa(): void {
   void obtenerTasa()
   setInterval(() => void obtenerTasa(), config.bcv.refreshHoras * 3_600_000)

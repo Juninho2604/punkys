@@ -1,7 +1,7 @@
 import { db } from '../../db/knex.js'
 import { config } from '../../config.js'
 import { normalizarNombre } from '../../services/normalize.js'
-import { obtenerTasa } from '../../services/tasaCambio.js'
+import { obtenerTasa, obtenerHistorial, tasaParaFecha } from '../../services/tasaCambio.js'
 import { PipelineProfitPlusConnector } from './pipeline.js'
 import type { PPStatus } from './types.js'
 
@@ -32,14 +32,19 @@ function esUsd(mone: string): boolean {
 // Tasa Bs/USD del momento del refresco (BCV de hoy), como respaldo cuando el
 // documento no trae una tasa real (muchos Profit operan en Bs con tasa=1).
 let tasaHoy = 0
+// Historial de tasas BCV por fecha, para el USD de documentos viejos.
+let histTasas: { fecha: string; valor: number }[] = []
 
 // USD equivalente de un documento en Bs:
 //  1. Si el documento ya está en USD → ese es el monto.
-//  2. Si trae una tasa REAL de facturación (> 1) → Bs ÷ esa tasa (USD histórico).
-//  3. Si no (tasa 1 o ausente) → Bs ÷ tasa BCV de hoy (estimado actual).
-function usdDoc(montoBs: number, mone: string, tasaDoc: number): number | null {
+//  2. Si trae una tasa REAL de facturación (> 1) → Bs ÷ esa tasa (USD histórico exacto).
+//  3. Si no (tasa 1 o ausente) y hay fecha → Bs ÷ tasa BCV de ESE día (histórica).
+//  4. Si no hay histórico para esa fecha → Bs ÷ tasa BCV de hoy.
+function usdDoc(montoBs: number, mone: string, tasaDoc: number, fecha?: unknown): number | null {
   if (esUsd(mone)) return Math.round(montoBs * 100) / 100
-  const t = tasaDoc > 1 ? tasaDoc : tasaHoy
+  let t = tasaDoc > 1 ? tasaDoc : 0
+  if (!t && fecha != null) t = tasaParaFecha(histTasas, fecha, tasaHoy)
+  if (!t) t = tasaHoy
   return t > 0 ? Math.round((montoBs / t) * 100) / 100 : null
 }
 
@@ -167,8 +172,8 @@ async function refrescarCxc(): Promise<string> {
           fecha_venc: r.fec_venc,
           total: Number(r.total),
           saldo: Number(r.saldo),
-          total_usd: usdDoc(Number(r.total), r.mone, Number(r.tasa)),
-          saldo_usd: usdDoc(Number(r.saldo), r.mone, Number(r.tasa)),
+          total_usd: usdDoc(Number(r.total), r.mone, Number(r.tasa), r.fec_emis),
+          saldo_usd: usdDoc(Number(r.saldo), r.mone, Number(r.tasa), r.fec_emis),
           dias_vencido: Number(r.dias),
           moneda: MONEDA_DOC(),
         })),
@@ -225,7 +230,7 @@ async function refrescarCobranzas(): Promise<string> {
 // ── Ventas: safacturaventa(+reng) → pp_ventas (mes × vendedor × línea) ───────
 async function refrescarVentas(): Promise<string> {
   const reng = await db.raw(
-    `SELECT to_char(f.fec_emis, 'YYYY-MM') AS mes,
+    `SELECT to_char(f.fec_emis, 'YYYY-MM') AS mes, f.fec_emis::date AS fecha,
             coalesce(nullif(trim(v.ven_des),''), 'Sin vendedor') AS vendedor,
             coalesce(nullif(trim(a.co_lin),''), 'otros') AS categoria,
             r.total_art AS unidades, r.reng_neto AS monto,
@@ -242,7 +247,7 @@ async function refrescarVentas(): Promise<string> {
     const a = agg.get(key) ?? { mes: r.mes, vendedor: r.vendedor, categoria: r.categoria, unidades: 0, monto: 0, usd: 0 }
     a.unidades += Number(r.unidades)
     a.monto += Number(r.monto) // Bs
-    a.usd += usdDoc(Number(r.monto), r.mone, Number(r.tasa)) ?? 0 // USD a la tasa de la factura
+    a.usd += usdDoc(Number(r.monto), r.mone, Number(r.tasa), r.fecha) ?? 0 // USD a la tasa de la factura
     agg.set(key, a)
   }
   const filas = [...agg.values()].map((a) => ({
@@ -279,7 +284,7 @@ async function refrescarCompras(): Promise<string> {
     proveedor: r.proveedor,
     categoria: null,
     monto_usd: Math.round(Number(r.monto) * 100) / 100, // Bs (nombre legado)
-    monto_usd_real: usdDoc(Number(r.monto), r.mone, Number(r.tasa)), // USD histórico
+    monto_usd_real: usdDoc(Number(r.monto), r.mone, Number(r.tasa), r.fecha), // USD histórico
     moneda: MONEDA_DOC(),
   }))
   await db.transaction(async (trx) => {
@@ -315,8 +320,8 @@ async function refrescarCxp(): Promise<string> {
           fecha_venc: r.fec_venc,
           total: Number(r.total),
           saldo: Number(r.saldo),
-          total_usd: usdDoc(Number(r.total), r.mone, Number(r.tasa)),
-          saldo_usd: usdDoc(Number(r.saldo), r.mone, Number(r.tasa)),
+          total_usd: usdDoc(Number(r.total), r.mone, Number(r.tasa), r.fec_emis),
+          saldo_usd: usdDoc(Number(r.saldo), r.mone, Number(r.tasa), r.fec_emis),
           dias_vencido: Number(r.dias),
           moneda: MONEDA_DOC(),
         })),
@@ -340,6 +345,7 @@ export async function refrescarDesdeReplica(): Promise<{ ok: boolean; detalle: s
     }
     // Tasa BCV de hoy: respaldo para el USD de documentos sin tasa real
     tasaHoy = (await obtenerTasa()).valor || 0
+    histTasas = await obtenerHistorial()
     const partes: string[] = []
     for (const paso of [refrescarProductos, refrescarCxc, refrescarCobranzas, refrescarVentas, refrescarCompras, refrescarCxp]) {
       try {
