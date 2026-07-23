@@ -35,13 +35,16 @@ let tasaHoy = 0
 // Historial de tasas BCV por fecha, para el USD de documentos viejos.
 let histTasas: { fecha: string; valor: number }[] = []
 
-// USD equivalente de un documento en Bs:
-//  1. Si el documento ya está en USD → ese es el monto.
-//  2. Si trae una tasa REAL de facturación (> 1) → Bs ÷ esa tasa (USD histórico exacto).
-//  3. Si no (tasa 1 o ausente) y hay fecha → Bs ÷ tasa BCV de ESE día (histórica).
-//  4. Si no hay histórico para esa fecha → Bs ÷ tasa BCV de hoy.
-function usdDoc(montoBs: number, mone: string, tasaDoc: number, fecha?: unknown): number | null {
-  if (esUsd(mone)) return Math.round(montoBs * 100) / 100
+// USD equivalente de un documento. IMPORTANTE: en este Profit los MONTOS de los
+// documentos (saldo, total) están SIEMPRE en bolívares; el `co_mone='USD'` es
+// solo la moneda de referencia de la lista, NO la del monto. Por eso NO se usa
+// esUsd aquí: la conversión real a dólares es Bs ÷ tasa.
+//  1. Si el documento trae su tasa REAL de facturación (> 1) → Bs ÷ esa tasa.
+//     Este es el USD histórico EXACTO (la tasa del día en que se facturó).
+//  2. Si no hay tasa en el documento pero hay fecha → Bs ÷ tasa BCV de ESE día.
+//  3. Si no hay histórico para esa fecha → Bs ÷ tasa BCV de hoy.
+// (`mone` se conserva en la firma por compatibilidad; ya no decide la moneda.)
+function usdDoc(montoBs: number, _mone: string, tasaDoc: number, fecha?: unknown): number | null {
   let t = tasaDoc > 1 ? tasaDoc : 0
   if (!t && fecha != null) t = tasaParaFecha(histTasas, fecha, tasaHoy)
   if (!t) t = tasaHoy
