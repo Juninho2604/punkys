@@ -25,6 +25,11 @@ interface PreviewResp {
   detalle: { vendedor: string; correo: string | null; estado: string; totSaldo: number }[]
   previewHtml?: string
 }
+interface VendCorreo {
+  vendedor: string; vendedorNorm: string; docs: number; saldo: number
+  correo: string | null; cc: string | null; activo: boolean
+  correoResuelto: string | null; fuente: string
+}
 
 const fmt = (n: number, m = 'Bs') => `${m} ${n.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 
@@ -39,6 +44,7 @@ export function CuentasPorCobrar() {
   const [notas, setNotas] = useState<Nota[]>([])
   const [nuevaNota, setNuevaNota] = useState('')
   const [diario, setDiario] = useState<PreviewResp | null>(null)
+  const [correos, setCorreos] = useState<VendCorreo[] | null>(null)
   const [ocupado, setOcupado] = useState(false)
 
   useEffect(() => {
@@ -74,6 +80,18 @@ export function CuentasPorCobrar() {
       setDiario(r)
     } catch (err) { toast(err instanceof Error ? err.message : 'Error') } finally { setOcupado(false) }
   }
+  const abrirCorreos = async () => {
+    setOcupado(true)
+    try { setCorreos((await api.get<{ vendedores: VendCorreo[] }>('/cxc/diario/vendedores')).vendedores) }
+    catch (err) { toast(err instanceof Error ? err.message : 'Error') } finally { setOcupado(false) }
+  }
+  const guardarCorreo = async (v: VendCorreo) => {
+    try {
+      await api.put('/cxc/diario/vendedores', { vendedor: v.vendedor, correo: v.correo ?? '', cc: v.cc ?? '', activo: v.activo })
+      toast(`Correo de ${v.vendedor} guardado ✓`)
+      await abrirCorreos()
+    } catch (err) { toast(err instanceof Error ? err.message : 'No se pudo guardar') }
+  }
 
   if (error) return <div className="fade-up"><p className="subtitle">{error}</p></div>
   if (!data) return null
@@ -92,7 +110,10 @@ export function CuentasPorCobrar() {
           </p>
         </div>
         {esAdmin && !vacio && (
-          <button className="btn btn-secondary" disabled={ocupado} onClick={previewDiario}>Correo diario CxC</button>
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+            <button className="btn btn-secondary" disabled={ocupado} onClick={abrirCorreos}>Correos del diario</button>
+            <button className="btn btn-secondary" disabled={ocupado} onClick={previewDiario}>Correo diario CxC</button>
+          </div>
         )}
       </div>
 
@@ -203,6 +224,56 @@ export function CuentasPorCobrar() {
             <p className="caption" style={{ marginTop: 8 }}>
               Se envía solo/programado cada día a las 7am. El envío real requiere el correo configurado (SMTP); en modo consola queda registrado sin salir.
             </p>
+          </div>
+        </div>
+      )}
+
+      {/* Mapeo vendedor → correo del CxC diario (admin) */}
+      {correos && (
+        <div className="modal-backdrop" onClick={() => setCorreos(null)}>
+          <div className="modal-card" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 680, maxHeight: '88vh', overflowY: 'auto' }}>
+            <h3>Correos del CxC diario</h3>
+            <p className="cell-sub" style={{ marginBottom: 4 }}>
+              A qué correo se le manda el reporte diario a cada vendedor. Si lo dejas vacío, se usa el correo de su usuario del sistema.
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 12 }}>
+              {correos.length === 0 && <p className="cell-sub">No hay vendedores con cartera todavía.</p>}
+              {correos.map((v, i) => (
+                <div key={v.vendedorNorm} className="card" style={{ padding: 14, border: '1px solid var(--line-100)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
+                    <strong style={{ font: '800 14px var(--font-ui)', color: 'var(--ink-900)' }}>{v.vendedor}</strong>
+                    <span className="caption">{fmt(v.saldo)} · {v.docs} doc{v.docs === 1 ? '' : 's'}</span>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginTop: 10 }}>
+                    <input
+                      className="input-text"
+                      placeholder="correo@empresa.com"
+                      value={v.correo ?? ''}
+                      onChange={(e) => setCorreos((prev) => prev!.map((x, j) => (j === i ? { ...x, correo: e.target.value } : x)))}
+                    />
+                    <input
+                      className="input-text"
+                      placeholder="CC (opcional, separado por coma)"
+                      value={v.cc ?? ''}
+                      onChange={(e) => setCorreos((prev) => prev!.map((x, j) => (j === i ? { ...x, cc: e.target.value } : x)))}
+                    />
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 10, gap: 10, flexWrap: 'wrap' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 6, font: '600 12.5px var(--font-ui)', color: 'var(--ink-500)' }}>
+                      <input type="checkbox" checked={v.activo} onChange={(e) => setCorreos((prev) => prev!.map((x, j) => (j === i ? { ...x, activo: e.target.checked } : x)))} />
+                      Recibe el diario
+                    </label>
+                    <span className="caption">
+                      {v.fuente === 'manual' ? 'Correo manual' : v.fuente === 'usuario' ? `Por usuario: ${v.correoResuelto}` : 'Sin correo'}
+                    </span>
+                    <button className="btn btn-primary btn-sm" style={{ padding: '6px 12px' }} onClick={() => guardarCorreo(v)}>Guardar</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 16 }}>
+              <button className="btn btn-secondary" onClick={() => setCorreos(null)}>Cerrar</button>
+            </div>
           </div>
         </div>
       )}

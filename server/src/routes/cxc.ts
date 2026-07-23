@@ -106,3 +106,66 @@ cxcRouter.post('/diario/enviar', requireRole(), async (req, res, next) => {
     next(err)
   }
 })
+
+// ── Mapeo vendedor → correo del CxC diario (solo admin) ──────────────────────
+// Lista los vendedores que aparecen en la cartera y a qué correo se les manda
+// su reporte (override manual; si no, cae al email del usuario del sistema).
+cxcRouter.get('/diario/vendedores', requireRole(), async (_req, res, next) => {
+  try {
+    const [ventas, overrides, usuarios] = await Promise.all([
+      db('pp_cxc').whereNotNull('vendedor').groupBy('vendedor').select('vendedor').count('* as docs').sum('saldo as saldo'),
+      db('cxc_vendedor_correo'),
+      db('users').whereIn('rol', ['vendedor', 'cxc']).andWhere('activo', true).select('nombre', 'email'),
+    ])
+    const overrideDe = new Map(overrides.map((o: any) => [o.vendedor_norm, o]))
+    const usuarioDe = new Map(usuarios.map((u: any) => [normalizarNombre(u.nombre), u.email]))
+    const vendedores = (ventas as any[])
+      .map((v) => {
+        const norm = normalizarNombre(v.vendedor)
+        const ov = overrideDe.get(norm)
+        const fallback = usuarioDe.get(norm) ?? null
+        return {
+          vendedor: v.vendedor,
+          vendedorNorm: norm,
+          docs: Number(v.docs),
+          saldo: Number(v.saldo ?? 0),
+          correo: ov?.correo ?? null,
+          cc: ov?.cc ?? null,
+          activo: ov ? Boolean(ov.activo) : true,
+          correoResuelto: ov?.correo ?? fallback,
+          fuente: ov?.correo ? 'manual' : fallback ? 'usuario' : 'sin correo',
+        }
+      })
+      .sort((a, b) => b.saldo - a.saldo)
+    res.json({ vendedores })
+  } catch (err) {
+    next(err)
+  }
+})
+
+cxcRouter.put('/diario/vendedores', requireRole(), async (req, res, next) => {
+  try {
+    const d = z
+      .object({
+        vendedor: z.string().trim().min(1),
+        correo: z.string().trim().email('Correo inválido').or(z.literal('')),
+        cc: z.string().trim().max(300).optional().default(''),
+        activo: z.boolean().optional().default(true),
+      })
+      .parse(req.body)
+    const norm = normalizarNombre(d.vendedor)
+    if (!d.correo) {
+      // Sin correo → quitar el override (vuelve al fallback por usuario)
+      await db('cxc_vendedor_correo').where('vendedor_norm', norm).del()
+      res.json({ ok: true, removed: true })
+      return
+    }
+    await db('cxc_vendedor_correo')
+      .insert({ vendedor_norm: norm, vendedor: d.vendedor, correo: d.correo, cc: d.cc || null, activo: d.activo, updated_at: db.fn.now() })
+      .onConflict('vendedor_norm')
+      .merge(['vendedor', 'correo', 'cc', 'activo', 'updated_at'])
+    res.json({ ok: true })
+  } catch (err) {
+    next(err)
+  }
+})
