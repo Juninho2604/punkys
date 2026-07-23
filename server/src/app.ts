@@ -20,6 +20,7 @@ import { tasaRouter } from './routes/tasa.js'
 import { operacionalRouter } from './routes/operacional.js'
 import { visitasRouter } from './routes/visitas.js'
 import { reportesRouter } from './routes/reportes.js'
+import { tesoreriaRouter } from './routes/tesoreria.js'
 
 export function createApp() {
   const app = express()
@@ -48,6 +49,7 @@ export function createApp() {
   app.use('/api/operacional', operacionalRouter)
   app.use('/api/visitas', visitasRouter)
   app.use('/api/reportes', reportesRouter)
+  app.use('/api/tesoreria', tesoreriaRouter)
 
   app.use(errorHandler)
   return app

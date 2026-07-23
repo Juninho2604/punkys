@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useState } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { BarChart3, Bell, Boxes, CheckCircle, Coins, FileText, HandCoins, KeyRound, LayoutGrid, LogOut, MapPin, Menu, Palette, ChevronLeft, ReceiptText, Search, ServerCog, ShoppingCart, Sparkles, Truck, Users, Wallet } from 'lucide-react'
+import { BarChart3, Bell, Boxes, CheckCircle, Coins, FileText, HandCoins, KeyRound, Landmark, LayoutGrid, LogOut, MapPin, Menu, Palette, ChevronLeft, ReceiptText, Search, ServerCog, ShoppingCart, Sparkles, Truck, Users, Wallet } from 'lucide-react'
 import { ROL_LABEL, useAuth } from '../lib/auth'
 import { api } from '../lib/api'
 import { useToast } from '../lib/toast'
@@ -26,6 +26,7 @@ const NAV: NavItem[] = [
   { to: '/aprobaciones', label: 'Aprobaciones', icon: CheckCircle, roles: ['cxc', 'admin'], badge: 'pend' },
   { to: '/facturacion', label: 'Facturación', icon: ReceiptText, roles: ['facturacion', 'admin'], badge: 'fact' },
   { to: '/cuentas-por-cobrar', label: 'Cuentas por Cobrar', icon: Wallet, roles: ['cxc', 'admin'] },
+  { to: '/tesoreria', label: 'Tesorería', icon: Landmark, roles: ['cxc', 'admin'] },
   { to: '/despacho', label: 'Despacho', icon: Truck, roles: ['vendedor', 'despacho', 'admin'] },
   { to: '/visitas', label: 'Visitas de campo', icon: MapPin, roles: ['mercaderista', 'vendedor', 'admin'] },
 ]
@@ -36,6 +37,7 @@ const TITULOS: Record<string, string> = {
   '/aprobaciones': 'Aprobaciones',
   '/facturacion': 'Facturación',
   '/cuentas-por-cobrar': 'Cuentas por Cobrar',
+  '/tesoreria': 'Tesorería · Flujo de Caja',
   '/ventas': 'Ventas Analítica',
   '/comisiones': 'Comisiones',
   '/compras': 'Compras & Por Pagar',
