@@ -4,9 +4,12 @@ import { Badge } from '../components/Badge'
 // Solo visible para el rol admin (Owner).
 
 const PALETA = [
-  { token: 'brand-900', hex: '#12306F', uso: 'Sidebar, hover primario' },
-  { token: 'brand-800', hex: '#1A3F8F', uso: 'Botón primario, enlaces' },
+  { token: 'brand-900', hex: '#153C87', uso: 'Azul institucional oficial (Pantone 6104 C)' },
+  { token: 'brand-800', hex: '#1F4BA0', uso: 'Botón primario, enlaces' },
   { token: 'brand-500', hex: '#4A86D8', uso: 'Focus, links secundarios' },
+  { token: 'brand-teal', hex: '#00AEBE', uso: 'Acento secundario oficial' },
+  { token: 'brand-green', hex: '#38B07D', uso: 'Verde de marca oficial' },
+  { token: 'brand-coral', hex: '#DE5A28', uso: 'Terracota/coral oficial' },
   { token: 'sky-200', hex: '#BCDCF4', uso: 'Bordes sobre celeste, avatar' },
   { token: 'sky-100', hex: '#D6EAF9', uso: 'Fondo login (marca)' },
   { token: 'sky-50', hex: '#EAF4FC', uso: 'Fondo de la aplicación' },
@@ -27,6 +30,7 @@ const TIPOS = [
   { token: 'Body', sample: 'Texto de interfaz y descripciones largas.', css: "600 14px 'Nunito Sans'", spec: 'Nunito Sans · 600 · 14/21' },
   { token: 'Label', sample: 'ETIQUETA DE CAMPO', css: "700 12px 'Nunito Sans'", spec: 'Nunito Sans · 700 · 12 · +0.6px · caps' },
   { token: 'Caption', sample: 'Metadatos y fechas', css: "600 12px 'Nunito Sans'", spec: 'Nunito Sans · 600 · 12/16' },
+  { token: 'KPI', sample: '1.234.567', css: "400 34px 'Bebas Neue'", spec: 'Bebas Neue · números de KPI (Brand Pack 2026)' },
 ]
 
 const ESPACIOS = [

@@ -4,9 +4,19 @@
    ═══════════════════════════════════════════════════════════════════════════ */
 
 :root {
-  --brand-900: #12306f;
-  --brand-800: #1a3f8f;
+  /* Azul institucional oficial · Brand Pack 2026 (Pantone 6104 C = #153C87).
+     Antes era una aproximación (#12306f); se alinea a la marca real. */
+  --brand-900: #153C87;
+  --brand-800: #1f4ba0;
   --brand-500: #4a86d8;
+  /* Paleta secundaria oficial (para gráficas y acentos de módulos nuevos) */
+  --brand-teal: #00aebe;
+  --brand-green: #38b07d;
+  --brand-coral: #de5a28;
+  /* Rampa de azules oficial (fondos y barras suaves) */
+  --brand-b1: #65b7e7;
+  --brand-b2: #95cff2;
+  --brand-b3: #c9e8fb;
   --sky-200: #bcdcf4;
   --sky-100: #d6eaf9;
   --sky-50: #eaf4fc;
@@ -34,6 +44,9 @@
   --focus-ring: 0 0 0 3px rgba(74, 134, 216, 0.18);
   --font-display: 'Baloo 2', cursive;
   --font-ui: 'Nunito Sans', sans-serif;
+  /* Fuente para NÚMEROS grandes (KPIs) · Bebas Neue del Brand Pack 2026:
+     condensada, da jerarquía y aire. El resto de la UI sigue en Baloo 2. */
+  --font-num: 'Bebas Neue', 'Baloo 2', sans-serif;
 }
 
 * {
@@ -295,7 +308,8 @@ textarea::placeholder {
 }
 
 .card-kpi .kpi-value {
-  font: 700 30px var(--font-display);
+  font: 400 34px var(--font-num);
+  letter-spacing: 0.5px;
   color: var(--brand-900);
   margin-top: 6px;
   line-height: 1;
