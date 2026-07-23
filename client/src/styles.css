@@ -42,7 +42,10 @@
   --shadow-login: 0 12px 40px rgba(18, 48, 111, 0.14);
   --shadow-cta: 0 4px 14px rgba(240, 138, 36, 0.35);
   --focus-ring: 0 0 0 3px rgba(74, 134, 216, 0.18);
-  --font-display: 'Baloo 2', cursive;
+  /* Display/títulos: Fredoka (redondeada pero geométrica y más pulida que la
+     anterior Baloo 2, que se sentía "comic"). Alegre pero con más formalidad;
+     es la fuente del Brand Pack 2026. */
+  --font-display: 'Fredoka', 'Baloo 2', sans-serif;
   --font-ui: 'Nunito Sans', sans-serif;
   /* Fuente para NÚMEROS grandes (KPIs) · Bebas Neue del Brand Pack 2026:
      condensada, da jerarquía y aire. El resto de la UI sigue en Baloo 2. */

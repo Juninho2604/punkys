@@ -24,9 +24,9 @@ const PALETA = [
 ]
 
 const TIPOS = [
-  { token: 'H1', sample: 'Título de página', css: "700 26px 'Baloo 2'", spec: 'Baloo 2 · 700 · 26/32' },
-  { token: 'H2', sample: 'Título de sección', css: "700 20px 'Baloo 2'", spec: 'Baloo 2 · 700 · 20/26' },
-  { token: 'H3', sample: 'Título de tarjeta', css: "700 16px 'Baloo 2'", spec: 'Baloo 2 · 700 · 16/22' },
+  { token: 'H1', sample: 'Título de página', css: "700 26px 'Fredoka'", spec: 'Fredoka · 700 · 26/32' },
+  { token: 'H2', sample: 'Título de sección', css: "700 20px 'Fredoka'", spec: 'Fredoka · 700 · 20/26' },
+  { token: 'H3', sample: 'Título de tarjeta', css: "700 16px 'Fredoka'", spec: 'Fredoka · 700 · 16/22' },
   { token: 'Body', sample: 'Texto de interfaz y descripciones largas.', css: "600 14px 'Nunito Sans'", spec: 'Nunito Sans · 600 · 14/21' },
   { token: 'Label', sample: 'ETIQUETA DE CAMPO', css: "700 12px 'Nunito Sans'", spec: 'Nunito Sans · 700 · 12 · +0.6px · caps' },
   { token: 'Caption', sample: 'Metadatos y fechas', css: "600 12px 'Nunito Sans'", spec: 'Nunito Sans · 600 · 12/16' },
@@ -87,7 +87,7 @@ export function DesignSystem() {
       <div className="card" style={{ padding: 24 }}>
         <h2 style={{ font: '700 18px var(--font-display)', color: 'var(--brand-900)', margin: '0 0 6px' }}>02 · Tipografía</h2>
         <p style={{ font: '600 13px var(--font-ui)', color: 'var(--ink-500)', margin: '0 0 16px' }}>
-          Display: <b>Baloo 2</b> (títulos, redondeada = ADN de marca) · Texto: <b>Nunito Sans</b> (UI y cuerpo).
+          Display: <b>Fredoka</b> (títulos, redondeada pero pulida · Brand Pack 2026) · Texto: <b>Nunito Sans</b> (UI y cuerpo) · Números KPI: <b>Bebas Neue</b>.
         </p>
         {TIPOS.map((t) => (
           <div key={t.token} className="tipo-row">
