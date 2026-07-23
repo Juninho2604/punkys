@@ -14,18 +14,18 @@ export function MascotaFrenchie({ hideEyes = false }: { hideEyes?: boolean }) {
       <g style={{ animation: 'headTilt 5.2s ease-in-out infinite', transformOrigin: '130px 168px' }}>
         {/* orejas grandes redondeadas, inclinadas hacia afuera */}
         <g style={{ animation: 'earTwitch 5.2s ease-in-out infinite', transformOrigin: '80px 76px' }}>
-          <ellipse cx="76" cy="46" rx="25" ry="36" fill="#66696C" stroke="#2E2A28" strokeWidth="5.5" transform="rotate(-24 76 46)" />
+          <ellipse cx="76" cy="46" rx="25" ry="36" fill="#565C64" stroke="#2E2A28" strokeWidth="5.5" transform="rotate(-24 76 46)" />
         </g>
-        <ellipse cx="184" cy="44" rx="26" ry="38" fill="#66696C" stroke="#2E2A28" strokeWidth="5.5" transform="rotate(24 184 44)" />
+        <ellipse cx="184" cy="44" rx="26" ry="38" fill="#565C64" stroke="#2E2A28" strokeWidth="5.5" transform="rotate(24 184 44)" />
         {/* cabeza en huevo, gris con franja blanca */}
-        <path d="M64 122 C60 82 88 56 130 56 C172 56 200 82 196 122 C193 152 166 168 130 168 C94 168 67 152 64 122 Z" fill="#66696C" stroke="#2E2A28" strokeWidth="5.5" />
+        <path d="M64 122 C60 82 88 56 130 56 C172 56 200 82 196 122 C193 152 166 168 130 168 C94 168 67 152 64 122 Z" fill="#565C64" stroke="#2E2A28" strokeWidth="5.5" />
         <g clipPath="url(#punky-head-clip)">
           <path d="M112 52 C112 74 108 88 100 98 C94 106 88 112 84 119 C96 128 116 131 131 129 C133 104 133 76 131 52 Z" fill="#FFFFFF" />
         </g>
         {/* hocico grande y bajo con jowls */}
         <path d="M84 132 C84 112 102 106 130 106 C158 106 176 112 176 132 C176 150 163 163 144 165 C137 165.8 132 164 130 161 C128 164 123 165.8 116 165 C97 163 84 150 84 132 Z" fill="#FFFFFF" />
         <g clipPath="url(#punky-muzzle-clip)">
-          <ellipse cx="166" cy="136" rx="28" ry="32" fill="#66696C" />
+          <ellipse cx="166" cy="136" rx="28" ry="32" fill="#565C64" />
         </g>
         <path d="M84 132 C84 112 102 106 130 106 C158 106 176 112 176 132 C176 150 163 163 144 165 C137 165.8 132 164 130 161 C128 164 123 165.8 116 165 C97 163 84 150 84 132 Z" fill="none" stroke="#2E2A28" strokeWidth="5.5" />
         {/* arruga entre los ojos */}

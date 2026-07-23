@@ -469,11 +469,21 @@ textarea::placeholder {
 }
 
 .login-mascota {
-  width: 190px;
+  width: 204px;
   margin: 0 auto -34px;
   position: relative;
   z-index: 1;
   pointer-events: none;
+}
+
+/* Halo azul de marca detrás de la mascota: la enmarca y la conecta con la
+   identidad del ícono de la app (Punky en azul institucional). */
+.login-mascota::before {
+  content: '';
+  position: absolute;
+  inset: -22px 4px 6px;
+  z-index: -1;
+  background: radial-gradient(circle at 50% 44%, rgba(21, 60, 135, 0.16), rgba(21, 60, 135, 0) 68%);
 }
 
 .login-logo {

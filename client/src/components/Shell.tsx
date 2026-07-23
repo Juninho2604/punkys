@@ -93,7 +93,7 @@ export function Shell() {
         <aside className={`sidebar${collapsed ? ' collapsed' : ''}${mobileOpen ? ' mobile-open' : ''}`}>
           <div className="sidebar-brand">
             {collapsed ? (
-              <img src="/logo-circulo.png" alt="Punky Partners" style={{ width: 40, height: 40, borderRadius: '50%' }} />
+              <img src="/logo-isotipo.png" alt="Punky Partners" style={{ width: 40, height: 40, borderRadius: 9 }} />
             ) : (
               <img src="/logo-wordmark-white.png" alt="Punky Partners" style={{ width: 150 }} />
             )}
