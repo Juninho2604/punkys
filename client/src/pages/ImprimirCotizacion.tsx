@@ -78,7 +78,7 @@ export function ImprimirCotizacion() {
       <div className="print-sheet">
         {/* Membrete */}
         <header className="ps-head">
-          <img src="/logo-letters.png" alt="Punky Partners" className="ps-logo" />
+          <img src="/logo-wordmark.png" alt="Punky Partners" className="ps-logo" />
           <div className="ps-empresa">
             <div className="ps-empresa-nombre">Punky Partners</div>
             <div>Logística corporativa</div>

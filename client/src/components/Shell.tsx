@@ -95,7 +95,7 @@ export function Shell() {
             {collapsed ? (
               <img src="/logo-circulo.png" alt="Punky Partners" style={{ width: 40, height: 40, borderRadius: '50%' }} />
             ) : (
-              <img src="/logo-letters.png" alt="Punky Partners" style={{ width: 150 }} />
+              <img src="/logo-wordmark-white.png" alt="Punky Partners" style={{ width: 150 }} />
             )}
           </div>
           <nav className="sidebar-nav">

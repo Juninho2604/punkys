@@ -36,7 +36,7 @@ export function Login() {
           <MascotaFrenchie hideEyes={pwHide} />
         </div>
         <div className="login-logo">
-          <img src="/logo-letters.png" alt="Punky Partners" style={{ width: 236, position: 'relative' }} />
+          <img src="/logo-wordmark.png" alt="Punky Partners" style={{ width: 220, position: 'relative' }} />
         </div>
         <h1 className="h1" style={{ textAlign: 'center', marginBottom: 4 }}>
           ¡Hola de nuevo!

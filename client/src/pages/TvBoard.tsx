@@ -132,7 +132,7 @@ export function TvBoard() {
   return (
     <div className="tv-root">
       <header className="tv-header">
-        <img src="/logo-letters.png" alt="Punky Partners" style={{ width: 'clamp(90px, 8vw, 150px)' }} />
+        <img src="/logo-wordmark-white.png" alt="Punky Partners" style={{ width: 'clamp(90px, 8vw, 150px)' }} />
         <div>
           <div className="tv-title">Centro de Operaciones</div>
           <div className="tv-sub">Logística · tiempo real</div>
