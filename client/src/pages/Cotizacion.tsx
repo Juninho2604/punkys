@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Search, Plus, Minus, X } from 'lucide-react'
 import { api } from '../lib/api'
 import { fmtBs } from '../lib/format'
+import { useTasa, usdEq } from '../lib/moneda'
 import { useToast } from '../lib/toast'
 import { usePend } from '../components/Shell'
 import type { Producto, Quote } from '../lib/types'
@@ -47,6 +48,7 @@ interface Renglon {
 export function Cotizacion() {
   const toast = useToast()
   const { refreshPend } = usePend()
+  const tasa = useTasa()
   const [paso, setPaso] = useState(0)
   const [form, setForm] = useState<Form>(FORM_INICIAL)
   const [items, setItems] = useState<Renglon[]>([])
@@ -211,7 +213,12 @@ export function Cotizacion() {
           <p className="subtitle" style={{ margin: '0 0 4px', color: 'var(--success-600)', fontWeight: 700 }}>
             Ya está en Cuentas por Cobrar ✓
           </p>
-          <div style={{ font: '700 30px var(--font-display)', color: 'var(--brand-900)', margin: '14px 0 26px' }}>{fmtBs(generada.total)}</div>
+          <div style={{ margin: '14px 0 26px' }}>
+            <div style={{ font: '700 30px var(--font-display)', color: 'var(--brand-900)' }}>{fmtBs(generada.total)}</div>
+            {usdEq(Number(generada.total), tasa) && (
+              <div style={{ font: '700 14px var(--font-ui)', color: 'var(--ink-500)', marginTop: 2 }}>{usdEq(Number(generada.total), tasa)}</div>
+            )}
+          </div>
           <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
             <button className="btn btn-primary" onClick={reset}>Nuevo pedido</button>
             <button className="btn btn-secondary" onClick={() => window.open(`/cotizaciones/${generada.id}/imprimir`, '_blank')}>
@@ -408,7 +415,12 @@ export function Cotizacion() {
               </div>
               <div className="pricing-total">
                 <span style={{ font: '700 15px var(--font-display)', color: '#fff' }}>Total cotización</span>
-                <span style={{ font: '700 20px var(--font-display)', color: '#fff', textAlign: 'right' }}>{fmtBs(totales.total)}</span>
+                <span style={{ textAlign: 'right' }}>
+                  <span style={{ font: '700 20px var(--font-display)', color: '#fff', display: 'block' }}>{fmtBs(totales.total)}</span>
+                  {usdEq(totales.total, tasa) && (
+                    <span style={{ font: '700 12px var(--font-ui)', color: 'rgba(255,255,255,0.82)' }}>{usdEq(totales.total, tasa)}</span>
+                  )}
+                </span>
               </div>
             </div>
           </>

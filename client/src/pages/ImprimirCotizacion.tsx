@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { api } from '../lib/api'
 import { fmtBs } from '../lib/format'
+import { useTasa, usdEq } from '../lib/moneda'
 import type { Quote } from '../lib/types'
 import { SERVICIO_NOMBRE } from './Cotizacion'
 
@@ -32,6 +33,7 @@ const fmtNum = (n: string | number, dec = 2) =>
 export function ImprimirCotizacion() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const tasa = useTasa()
   const [quote, setQuote] = useState<QuoteConVendedor | null>(null)
   const [error, setError] = useState<string | null>(null)
 
@@ -162,7 +164,10 @@ export function ImprimirCotizacion() {
                 </tr>
                 <tr className="total">
                   <td colSpan={4}>TOTAL</td>
-                  <td className="num">{fmtBs(quote.total)}</td>
+                  <td className="num">
+                    {fmtBs(quote.total)}
+                    {usdEq(Number(quote.total), tasa) && <div className="ps-usd">{usdEq(Number(quote.total), tasa)}</div>}
+                  </td>
                 </tr>
               </tbody>
             </table>
@@ -198,7 +203,10 @@ export function ImprimirCotizacion() {
                 </tr>
                 <tr className="total">
                   <td colSpan={2}>TOTAL</td>
-                  <td className="num">{fmtBs(quote.total)}</td>
+                  <td className="num">
+                    {fmtBs(quote.total)}
+                    {usdEq(Number(quote.total), tasa) && <div className="ps-usd">{usdEq(Number(quote.total), tasa)}</div>}
+                  </td>
                 </tr>
               </tbody>
             </table>

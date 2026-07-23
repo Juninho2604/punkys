@@ -1985,6 +1985,13 @@ textarea::placeholder {
   margin-bottom: 2px;
 }
 
+/* Referencia en USD bajo el total (hoja imprimible y pantallas) */
+.ps-usd {
+  font: 600 10px var(--font-ui);
+  color: #666;
+  margin-top: 1px;
+}
+
 /* ── Visitas de campo ─────────────────────────────────────────────── */
 .visita-lista {
   display: grid;
