@@ -256,6 +256,21 @@ Las migraciones se aplican **solas** al arrancar el contenedor `server`.
     y `sync_cxp.py` (⚠️ extractores de compras/CxP por confirmar en la PC).
     Con esto el dueño ve ambas caras: ingreso (ventas/cobranzas/CxC) y gasto
     (compras/CxP). El "todo Profit en vivo" llegará con el conector sqlserver.
+17. **Vistas móviles + marca (2026-07)**: arreglo del header (sin solapamiento),
+    grillas de KPI y gráficas sin desborde en teléfono; convergencia al Brand
+    Pack 2026 (azul oficial `#153C87`, paleta secundaria, Bebas Neue en KPIs).
+18. **Tesorería / Flujo de Caja (Fase C)**: módulo nativo inspirado en el sistema
+    CFO del cliente. Tablas propias `bancos`, `mov_tesoreria`, `compromisos_pago`
+    (CxP nativo; Profit 2K12 no maneja cuentas por pagar). Posición consolidada
+    Bs/USD y **proyección de caja semanal** (entradas = `pp_cxc` por vencimiento,
+    salidas = compromisos). Carga manual; listo para recibir el feed de bancos de
+    Profit (`saMovimientoBanco`/`saMovimientoCaja`) cuando se sumen al sync.
+19. **Reposición / Compras (Fase D)**: motor de forecast adaptado del "Plan de
+    Compras" del cliente. `pp_ventas_sku` (demanda por SKU × semana, materializada
+    de `safacturaventareng`) + `reposicion_config`. Servicio con promedio ~13 sem
+    con censura de quiebre, stock de seguridad z·σ·√lead, punto de pedido,
+    cobertura, cantidad sugerida y fecha límite. Página admin con parámetros
+    editables.
 
 ## 8. Pendientes / roadmap
 
@@ -264,6 +279,8 @@ Las migraciones se aplican **solas** al arrancar el contenedor `server`.
 | 🔴 Alta | **Cambiar las contraseñas de demo** (`punky123`) usando la nueva pantalla Usuarios, y crear los usuarios reales del equipo |
 | 🔴 Alta | **Activar el puente de datos** (código listo, ver `docs/puente-datos.md`): SYNC_TOKEN + PROFIT_PLUS_MODE=pipeline en el VPS + script en la PC del cliente. Decisiones pendientes: mapeo de sedes 002/035, lista de precios, moneda USD/Bs |
 | 🟡 Media | Credenciales **Twilio** (y luego migración a Cloud API con plantillas aprobadas de Meta) y **SMTP** — hoy todo en modo `console` |
+| 🟡 Media | **Feed de bancos a Tesorería**: sumar `saMovimientoBanco`/`saMovimientoCaja` al `tables.config.js` del Windows y materializarlas → autollenar `mov_tesoreria` (hoy carga manual). Va junto con la limpieza pendiente de `tables.config.js` |
+| 🟢 Baja | **Afinar Reposición por proveedor/origen**: lead y tránsito reales por SKU (hoy un lead global editable); estacionalidad y auto-calibración como en el Plan de Compras |
 | 🟡 Media | **Profit Plus**: implementar `SqlServerConnector` — el usuario gestiona con otra IA la investigación del esquema/acceso al SQL Server (lectura + inyección) |
 | 🟡 Media | Dominio + **HTTPS** (certbot; pasar `COOKIE_SECURE=true`) — guía lista en `docs/deploy-vps.md` |
 | 🟢 Baja | Merge a `main` + activar GitHub Actions (secrets `VPS_HOST/USER/SSH_KEY`) |
