@@ -17,6 +17,71 @@ shipmentsRouter.get('/', async (_req, res, next) => {
   }
 })
 
+// Rentabilidad por despacho (Tesorería · solo admin): venta del pedido vs
+// costos logísticos = margen. Montos en Bs; el USD es referencia en el front.
+shipmentsRouter.get('/costos', requireRole('admin'), async (_req, res, next) => {
+  try {
+    const rows = await db('shipments as s')
+      .leftJoin('quotes as q', 'q.id', 's.quote_id')
+      .select(
+        's.id',
+        's.numero',
+        's.cliente',
+        's.estado',
+        's.created_at',
+        's.costo_flete',
+        's.costo_combustible',
+        's.costo_peaje',
+        's.costo_otros',
+        's.costo_nota',
+        's.costos_at',
+        'q.total as venta',
+      )
+      .orderBy('s.created_at', 'desc')
+      .limit(300)
+
+    const despachos = rows.map((r) => {
+      const costo =
+        Number(r.costo_flete ?? 0) +
+        Number(r.costo_combustible ?? 0) +
+        Number(r.costo_peaje ?? 0) +
+        Number(r.costo_otros ?? 0)
+      const venta = Number(r.venta ?? 0)
+      const tieneCostos = r.costos_at != null
+      const margen = venta - costo
+      return {
+        id: r.id,
+        numero: r.numero,
+        cliente: r.cliente,
+        estado: r.estado,
+        created_at: r.created_at,
+        venta,
+        costoFlete: Number(r.costo_flete ?? 0),
+        costoCombustible: Number(r.costo_combustible ?? 0),
+        costoPeaje: Number(r.costo_peaje ?? 0),
+        costoOtros: Number(r.costo_otros ?? 0),
+        costoNota: r.costo_nota ?? '',
+        costo,
+        tieneCostos,
+        margen: tieneCostos ? margen : null,
+        margenPct: tieneCostos && venta > 0 ? Math.round((margen / venta) * 1000) / 10 : null,
+      }
+    })
+
+    const conCostos = despachos.filter((d) => d.tieneCostos)
+    const totales = {
+      venta: conCostos.reduce((s, d) => s + d.venta, 0),
+      costo: conCostos.reduce((s, d) => s + d.costo, 0),
+      margen: conCostos.reduce((s, d) => s + (d.margen ?? 0), 0),
+      despachos: conCostos.length,
+      sinCostos: despachos.length - conCostos.length,
+    }
+    res.json({ despachos, totales })
+  } catch (err) {
+    next(err)
+  }
+})
+
 shipmentsRouter.get('/:id', async (req, res, next) => {
   try {
     const shipment = await db('shipments').where({ id: Number(req.params.id) }).first()
@@ -47,6 +112,38 @@ shipmentsRouter.patch('/:id', requireRole('despacho'), async (req, res, next) =>
     if (datos.contactoWhatsapp !== undefined) update.contacto_whatsapp = datos.contactoWhatsapp
     if (datos.contactoEmail !== undefined) update.contacto_email = datos.contactoEmail || null
     const [shipment] = await db('shipments').where({ id: Number(req.params.id) }).update(update).returning('*')
+    if (!shipment) throw new HttpError(404, 'Envío no encontrado')
+    res.json({ shipment })
+  } catch (err) {
+    next(err)
+  }
+})
+
+const costosSchema = z.object({
+  costoFlete: z.coerce.number().nonnegative().optional(),
+  costoCombustible: z.coerce.number().nonnegative().optional(),
+  costoPeaje: z.coerce.number().nonnegative().optional(),
+  costoOtros: z.coerce.number().nonnegative().optional(),
+  costoNota: z.string().trim().max(400).optional().default(''),
+})
+
+// Registrar/actualizar los costos logísticos de un despacho (despacho o admin).
+shipmentsRouter.patch('/:id/costos', requireRole('despacho'), async (req, res, next) => {
+  try {
+    const d = costosSchema.parse(req.body)
+    const [shipment] = await db('shipments')
+      .where({ id: Number(req.params.id) })
+      .update({
+        costo_flete: d.costoFlete ?? 0,
+        costo_combustible: d.costoCombustible ?? 0,
+        costo_peaje: d.costoPeaje ?? 0,
+        costo_otros: d.costoOtros ?? 0,
+        costo_nota: d.costoNota || null,
+        costos_at: db.fn.now(),
+        costos_by: req.user!.id,
+        updated_at: db.fn.now(),
+      })
+      .returning('*')
     if (!shipment) throw new HttpError(404, 'Envío no encontrado')
     res.json({ shipment })
   } catch (err) {

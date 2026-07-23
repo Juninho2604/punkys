@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useState } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { BarChart3, Bell, Boxes, CheckCircle, FileText, HandCoins, KeyRound, LayoutGrid, LogOut, MapPin, Menu, Palette, ChevronLeft, ReceiptText, Search, ShoppingCart, Truck, Users, Wallet } from 'lucide-react'
+import { BarChart3, Bell, Boxes, CheckCircle, Coins, FileText, HandCoins, KeyRound, LayoutGrid, LogOut, MapPin, Menu, Palette, ChevronLeft, ReceiptText, Search, ShoppingCart, Truck, Users, Wallet } from 'lucide-react'
 import { ROL_LABEL, useAuth } from '../lib/auth'
 import { api } from '../lib/api'
 import { useToast } from '../lib/toast'
@@ -39,6 +39,7 @@ const TITULOS: Record<string, string> = {
   '/ventas': 'Ventas Analítica',
   '/comisiones': 'Comisiones',
   '/compras': 'Compras & Por Pagar',
+  '/costos': 'Costos de envío',
   '/catalogos': 'Catálogos operacionales',
   '/despacho': 'Despacho',
   '/visitas': 'Visitas de campo',
@@ -115,6 +116,10 @@ export function Shell() {
                 <NavLink to="/compras" className={({ isActive }) => `sidebar-item${isActive ? ' active' : ''}`}>
                   <ShoppingCart size={19} strokeWidth={2.2} />
                   {!collapsed && <span className="label">Compras &amp; Por Pagar</span>}
+                </NavLink>
+                <NavLink to="/costos" className={({ isActive }) => `sidebar-item${isActive ? ' active' : ''}`}>
+                  <Coins size={19} strokeWidth={2.2} />
+                  {!collapsed && <span className="label">Costos de envío</span>}
                 </NavLink>
                 <NavLink to="/catalogos" className={({ isActive }) => `sidebar-item${isActive ? ' active' : ''}`}>
                   <Boxes size={19} strokeWidth={2.2} />
