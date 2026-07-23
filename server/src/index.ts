@@ -4,6 +4,7 @@ import { iniciarRefrescoReplica } from './integrations/profitplus/replica.js'
 import { iniciarRefrescoTasa } from './services/tasaCambio.js'
 import { iniciarSincronizacionSheets } from './integrations/sheets/index.js'
 import { iniciarCxcDiario } from './services/cxcDiario.js'
+import { iniciarReportesIA } from './services/reportesIA.js'
 
 const app = createApp()
 
@@ -18,4 +19,6 @@ app.listen(config.port, () => {
   iniciarSincronizacionSheets()
   // Correo diario de CxC por vendedor (7am hora del servidor)
   iniciarCxcDiario()
+  // Reporte ejecutivo con IA (diario; requiere ANTHROPIC_API_KEY para redactar)
+  iniciarReportesIA()
 })

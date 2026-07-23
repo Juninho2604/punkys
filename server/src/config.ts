@@ -48,6 +48,17 @@ export const config = {
     refreshHoras: Number(process.env.BCV_REFRESH_HORAS ?? 8),
   },
 
+  // Reportes ejecutivos redactados por IA (Claude). Sin API key → deshabilitado.
+  ia: {
+    apiKey: process.env.ANTHROPIC_API_KEY ?? '',
+    model: process.env.IA_MODEL ?? 'claude-opus-4-8',
+    // Hora del reporte diario (0-23) y día de la semana del semanal (1=lunes).
+    reporteDiarioHora: Number(process.env.IA_REPORTE_HORA ?? 8),
+    get habilitado(): boolean {
+      return this.apiKey.length > 0
+    },
+  },
+
   email: {
     provider: env('EMAIL_PROVIDER', 'console') as 'console' | 'smtp',
     from: env('EMAIL_FROM', 'Punky Partners <notificaciones@punkypartners.com>'),
