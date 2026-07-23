@@ -22,6 +22,7 @@ import { Visitas } from './pages/Visitas'
 import { VisitaNueva } from './pages/VisitaNueva'
 import { Costos } from './pages/Costos'
 import { Reportes } from './pages/Reportes'
+import { Sistema } from './pages/Sistema'
 import type { Rol } from './lib/types'
 
 function Protegida({ roles, children }: { roles?: Rol[]; children: React.ReactNode }) {
@@ -63,6 +64,7 @@ function Rutas() {
         <Route path="/compras" element={<Protegida roles={[]}><Compras /></Protegida>} />
         <Route path="/costos" element={<Protegida roles={[]}><Costos /></Protegida>} />
         <Route path="/reportes" element={<Protegida roles={[]}><Reportes /></Protegida>} />
+        <Route path="/sistema" element={<Protegida roles={[]}><Sistema /></Protegida>} />
         <Route path="/catalogos" element={<Protegida roles={[]}><Catalogos /></Protegida>} />
         <Route path="/usuarios" element={<Protegida roles={[]}><Usuarios /></Protegida>} />
         <Route path="/sistema-diseno" element={<Protegida roles={[]}><DesignSystem /></Protegida>} />
