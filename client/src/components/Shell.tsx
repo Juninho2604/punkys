@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useState } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { BarChart3, Bell, Boxes, CheckCircle, Coins, FileText, HandCoins, KeyRound, Landmark, LayoutGrid, LogOut, MapPin, Menu, PackageSearch, Palette, Phone, ChevronLeft, ReceiptText, Search, ServerCog, ShoppingCart, Sparkles, Truck, Users, Wallet } from 'lucide-react'
+import { BarChart3, Bell, Boxes, CheckCircle, Coins, Database, FileText, HandCoins, KeyRound, Landmark, LayoutGrid, LogOut, MapPin, Menu, PackageSearch, Palette, Phone, ChevronLeft, ReceiptText, Search, ServerCog, ShoppingCart, Sparkles, Truck, Users, Wallet } from 'lucide-react'
 import { ROL_LABEL, useAuth } from '../lib/auth'
 import { api } from '../lib/api'
 import { useToast } from '../lib/toast'
@@ -48,6 +48,7 @@ const TITULOS: Record<string, string> = {
   '/catalogos': 'Catálogos operacionales',
   '/lineas': 'Líneas telefónicas',
   '/notificaciones': 'Notificaciones',
+  '/operacion-espejo': 'Operación del cliente (espejo)',
   '/despacho': 'Despacho',
   '/visitas': 'Visitas de campo',
   '/usuarios': 'Usuarios',
@@ -151,6 +152,10 @@ export function Shell() {
                 <NavLink to="/notificaciones" className={({ isActive }) => `sidebar-item${isActive ? ' active' : ''}`}>
                   <Bell size={19} strokeWidth={2.2} />
                   {!collapsed && <span className="label">Notificaciones</span>}
+                </NavLink>
+                <NavLink to="/operacion-espejo" className={({ isActive }) => `sidebar-item${isActive ? ' active' : ''}`}>
+                  <Database size={19} strokeWidth={2.2} />
+                  {!collapsed && <span className="label">Operación (espejo)</span>}
                 </NavLink>
                 <NavLink to="/comisiones" className={({ isActive }) => `sidebar-item${isActive ? ' active' : ''}`}>
                   <HandCoins size={19} strokeWidth={2.2} />

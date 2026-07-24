@@ -27,6 +27,7 @@ import { Tesoreria } from './pages/Tesoreria'
 import { Reposicion } from './pages/Reposicion'
 import { Lineas } from './pages/Lineas'
 import { NotifConfig } from './pages/NotifConfig'
+import { OperacionEspejo } from './pages/OperacionEspejo'
 import type { Rol } from './lib/types'
 
 function Protegida({ roles, children }: { roles?: Rol[]; children: React.ReactNode }) {
@@ -70,6 +71,7 @@ function Rutas() {
         <Route path="/reposicion" element={<Protegida roles={[]}><Reposicion /></Protegida>} />
         <Route path="/lineas" element={<Protegida roles={[]}><Lineas /></Protegida>} />
         <Route path="/notificaciones" element={<Protegida roles={[]}><NotifConfig /></Protegida>} />
+        <Route path="/operacion-espejo" element={<Protegida roles={[]}><OperacionEspejo /></Protegida>} />
         <Route path="/costos" element={<Protegida roles={[]}><Costos /></Protegida>} />
         <Route path="/reportes" element={<Protegida roles={[]}><Reportes /></Protegida>} />
         <Route path="/sistema" element={<Protegida roles={[]}><Sistema /></Protegida>} />
