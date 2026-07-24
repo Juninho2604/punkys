@@ -1,28 +1,29 @@
-# Migración y corte (cutover): sistema paralelo del cliente → intranet Punky
+# Copiar y mejorar el sistema del cliente (Sheets) → intranet Punky
 
-> Bitácora viva del corte. El cliente (andreas@punkypartners.com) opera hoy en
-> su "intranet" hecha en Google Sheets (usados como base de datos) + Apps Script
-> + Supabase. Este documento registra QUÉ data hay, HASTA qué fecha, CÓMO la
-> traemos, y el procedimiento del **arrastre final** el día que se apague su
-> sistema. Todo el acceso a sus Sheets es de **solo lectura**.
+> Bitácora viva. El cliente (andreas@punkypartners.com) opera hoy en su
+> "intranet" hecha en Google Sheets (usados como base de datos) + Apps Script +
+> Supabase. **NO se apaga ni se toca su sistema.** Objetivo: copiar TODA su data
+> y TODAS sus funciones a nuestra base **SQL** (estructuras más sólidas) y
+> mejorarlas — para venderle un producto superior al que ya tiene. Todo el
+> acceso a sus Sheets es de **solo lectura**; su sistema sigue funcionando.
 
 **Snapshot de este inventario:** 2026-07-23
-**Fecha de corte objetivo:** _por definir_
-**Modo:** cutover (reemplazo) — se congela su sistema y se arrastra el delta. _(confirmar vs. espejo continuo)_
+**Modo:** copia de **solo lectura** + mejora. Su sistema queda intacto y activo;
+nosotros construimos la versión superior y traemos su data para operar encima.
 
 ---
 
-## 1. Estrategia: "congelar y arrastrar"
+## 1. Estrategia: "copiar y mejorar" (sin tocar su sistema)
 
-1. Hoy documentamos el estado y traemos la data histórica (ensayo de migración).
-2. Se acuerda una **fecha de corte**. Desde ese momento nadie crea pedidos en el
-   sistema viejo (freeze).
-3. El día del corte corremos el importador con los Sheets **congelados** →
-   trae el delta final.
-4. El equipo empieza a operar en la intranet. Los Sheets quedan de respaldo
-   (solo lectura), no se borran.
+1. Documentamos toda su data (este inventario) y sus funciones.
+2. Traemos su data a nuestra base SQL (importador de **solo lectura** desde sus
+   Sheets; nunca se les escribe).
+3. Replicamos **cada función** que ella tiene y la **mejoramos** (estructuras
+   sólidas, Profit en vivo, auth propia, módulos nuevos).
+4. Su sistema sigue vivo en paralelo el tiempo que ella quiera; cuando decida,
+   migra su operación a la intranet sin presión ni fecha impuesta.
 
-No se toca ni modifica nada en sus Sheets en ningún momento.
+No se modifica ni borra nada en sus Sheets en ningún momento.
 
 ---
 
@@ -124,18 +125,25 @@ No se toca ni modifica nada en sus Sheets en ningún momento.
 
 ---
 
-## 5. Procedimiento del arrastre final (día del corte)
+## 5. Cómo se mantiene la copia al día (sin tocar su sistema)
 
-1. **Freeze**: se avisa que el sistema viejo queda de solo lectura; no se crean
-   pedidos nuevos allá.
-2. Se corre el importador con los Sheets congelados (mismo que el ensayo).
-3. **Verificación** de conteos:
-   - pedidos migrados vs. filas de "Pedidos ACTIVOS" + "Históricos".
-   - transiciones de estado vs. "Auditoría".
-   - filas de logística vs. hoja "Logística".
-4. Revisión rápida por muestreo (5–10 pedidos: cliente, renglones, estado, fechas).
-5. **Cutover**: el equipo empieza a operar en la intranet.
-6. Los Sheets quedan archivados (respaldo), no se borran.
+Como su sistema sigue vivo, la copia en nuestra base se **refresca de solo
+lectura** (una vez para el histórico, y luego periódicamente mientras ella siga
+operando en Sheets):
+
+1. El importador lee sus Sheets (solo lectura) y **reemplaza/actualiza** las
+   tablas espejo en nuestra SQL. Es **idempotente** (por `# Pedido`) → se puede
+   correr las veces que haga falta sin duplicar.
+2. **Verificación** de conteos: pedidos vs. "Pedidos ACTIVOS"+"Históricos";
+   transiciones vs. "Auditoría"; logística vs. hoja "Logística".
+3. Cuando el cliente decida operar en la intranet, ya toda su data está aquí y
+   funcionando — sin corte forzado. Sus Sheets quedan como respaldo.
+
+**Acceso necesario para que el servidor lea sus Sheets en continuo** (una sola
+configuración, sin exponer nada): compartir los dos Sheets en **solo lectura**
+con el correo de una **cuenta de servicio de Google** (la vía limpia), o
+publicar cada pestaña como **CSV**. Este es el "tema del correo/URL de los
+Sheets". Mientras tanto, el importador ya queda construido y listo.
 
 ---
 
@@ -143,10 +151,10 @@ No se toca ni modifica nada en sus Sheets en ningún momento.
 
 - [x] Inventario de las 16 pestañas (2 Sheets) — 2026-07-23.
 - [x] Paridad evaluada, huecos identificados.
-- [ ] Decisión: cutover vs. espejo · líneas telefónicas dentro/fuera.
+- [ ] Decisión de alcance: líneas telefónicas dentro/fuera.
 - [ ] Cerrar huecos de logística (#1) + Nº Nota (#2).
 - [ ] Config de notificaciones (#3).
-- [ ] Construir el importador (#5).
-- [ ] Fecha de corte acordada.
-- [ ] Ensayo de migración (dry-run con conteos).
-- [ ] Arrastre final + cutover.
+- [ ] Construir el importador de solo lectura (#5).
+- [ ] Configurar acceso del servidor a los Sheets (cuenta de servicio o CSV).
+- [ ] Ensayo: correr el importador y verificar conteos.
+- [ ] Refresco periódico mientras el cliente siga en Sheets.
