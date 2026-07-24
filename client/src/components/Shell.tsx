@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useState } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { BarChart3, Bell, Boxes, CheckCircle, Coins, FileText, HandCoins, KeyRound, Landmark, LayoutGrid, LogOut, MapPin, Menu, PackageSearch, Palette, ChevronLeft, ReceiptText, Search, ServerCog, ShoppingCart, Sparkles, Truck, Users, Wallet } from 'lucide-react'
+import { BarChart3, Bell, Boxes, CheckCircle, Coins, FileText, HandCoins, KeyRound, Landmark, LayoutGrid, LogOut, MapPin, Menu, PackageSearch, Palette, Phone, ChevronLeft, ReceiptText, Search, ServerCog, ShoppingCart, Sparkles, Truck, Users, Wallet } from 'lucide-react'
 import { ROL_LABEL, useAuth } from '../lib/auth'
 import { api } from '../lib/api'
 import { useToast } from '../lib/toast'
@@ -46,6 +46,7 @@ const TITULOS: Record<string, string> = {
   '/reportes': 'Reportes IA',
   '/sistema': 'Sistema',
   '/catalogos': 'Catálogos operacionales',
+  '/lineas': 'Líneas telefónicas',
   '/despacho': 'Despacho',
   '/visitas': 'Visitas de campo',
   '/usuarios': 'Usuarios',
@@ -141,6 +142,10 @@ export function Shell() {
                 <NavLink to="/catalogos" className={({ isActive }) => `sidebar-item${isActive ? ' active' : ''}`}>
                   <Boxes size={19} strokeWidth={2.2} />
                   {!collapsed && <span className="label">Catálogos</span>}
+                </NavLink>
+                <NavLink to="/lineas" className={({ isActive }) => `sidebar-item${isActive ? ' active' : ''}`}>
+                  <Phone size={19} strokeWidth={2.2} />
+                  {!collapsed && <span className="label">Líneas telefónicas</span>}
                 </NavLink>
                 <NavLink to="/comisiones" className={({ isActive }) => `sidebar-item${isActive ? ' active' : ''}`}>
                   <HandCoins size={19} strokeWidth={2.2} />

@@ -22,6 +22,7 @@ import { visitasRouter } from './routes/visitas.js'
 import { reportesRouter } from './routes/reportes.js'
 import { tesoreriaRouter } from './routes/tesoreria.js'
 import { reposicionRouter } from './routes/reposicion.js'
+import { lineasRouter } from './routes/lineas.js'
 
 export function createApp() {
   const app = express()
@@ -52,6 +53,7 @@ export function createApp() {
   app.use('/api/reportes', reportesRouter)
   app.use('/api/tesoreria', tesoreriaRouter)
   app.use('/api/reposicion', reposicionRouter)
+  app.use('/api/lineas', lineasRouter)
 
   app.use(errorHandler)
   return app
