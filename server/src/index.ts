@@ -5,7 +5,7 @@ import { iniciarRefrescoTasa } from './services/tasaCambio.js'
 import { iniciarSincronizacionSheets } from './integrations/sheets/index.js'
 import { iniciarCxcDiario } from './services/cxcDiario.js'
 import { iniciarReportesIA } from './services/reportesIA.js'
-import { autoImportarSiVacio } from './integrations/sheets/importarSnapshot.js'
+import { arrancarOperacion } from './integrations/sheets/importarSnapshot.js'
 
 const app = createApp()
 
@@ -22,6 +22,7 @@ app.listen(config.port, () => {
   iniciarCxcDiario()
   // Reporte ejecutivo con IA (diario; requiere ANTHROPIC_API_KEY para redactar)
   iniciarReportesIA()
-  // Carga el snapshot de la operación del cliente si el espejo está vacío (1er deploy)
-  void autoImportarSiVacio()
+  // Deja la operación del cliente lista: importa su snapshot (1er deploy) y
+  // convierte sus pedidos en nativos para que fluyan por los módulos.
+  void arrancarOperacion()
 })

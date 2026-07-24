@@ -123,7 +123,9 @@ export async function crearCotizacion(datos: NuevaCotizacion, user: AuthUser) {
       .merge(['razon_social', 'telefono', 'contacto'])
       .returning('*')
 
-    const numero = await nextNumber(trx, 'quote', 'COT')
+    // Pedido nativo nuevo: continúa la secuencia del cliente (1190, 1191…),
+    // sin prefijo COT- (ver counters.ts y convertirOperacion.ts).
+    const numero = await nextNumber(trx, 'quote', '')
     const [quote] = await trx('quotes')
       .insert({
         numero,

@@ -27,9 +27,10 @@ dashboardRouter.get('/', async (_req, res, next) => {
       .sum({ saldoUsd: 'saldo_usd' })
       .sum({ vencidoBs: db.raw('case when dias_vencido > 0 and saldo > 0 then saldo else 0 end') })
 
-    // Pedidos activos y por aprobar: operación del cliente (op_pedidos) + nativo
-    const opActivos = hayOp ? n((await db('op_pedidos').whereRaw("coalesce(estado,'') not ilike 'entregado'").count())[0]?.count) : 0
-    const opCxc = hayOp ? n((await db('op_pedidos').whereRaw("lower(coalesce(estado,'')) = 'cxc'").count())[0]?.count) : 0
+    // Pedidos activos y por aprobar (nativo). Los pedidos del cliente ya son
+    // pedidos nativos: pendiente/aprobada = en curso sin despachar; los envíos
+    // no entregados = en despacho. "Por aprobar" = cola de CxC (pendiente).
+    const quotesActivas = n((await db('quotes').whereIn('estado', ['pendiente', 'aprobada']).count())[0]?.count)
     const shipActivos = n((await db('shipments').whereNot('estado', 'Entregado').count())[0]?.count)
     const quotesPend = n((await db('quotes').where('estado', 'pendiente').count())[0]?.count)
 
@@ -49,7 +50,7 @@ dashboardRouter.get('/', async (_req, res, next) => {
     // Por aprobar (con acción nativa): cotizaciones pendientes de la intranet
     const pendientes = await db('quotes as q')
       .leftJoin('users as u', 'u.id', 'q.created_by')
-      .select('q.*', 'u.nombre as vendedor')
+      .select('q.*', db.raw('COALESCE(q.vendedor_ext, u.nombre) as vendedor'))
       .where('q.estado', 'pendiente')
       .orderBy('q.created_at', 'desc')
       .limit(3)
@@ -61,8 +62,8 @@ dashboardRouter.get('/', async (_req, res, next) => {
         carteraBs: n(cxc?.saldoBs),
         carteraUsd: n(cxc?.saldoUsd),
         vencidoBs: n(cxc?.vencidoBs),
-        pedidosActivos: opActivos + shipActivos,
-        porAprobar: opCxc + quotesPend,
+        pedidosActivos: quotesActivas + shipActivos,
+        porAprobar: quotesPend,
       },
       recientes,
       pendientes,

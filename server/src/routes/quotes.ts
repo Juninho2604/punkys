@@ -19,7 +19,7 @@ quotesRouter.get('/', async (req, res, next) => {
     const estado = req.query.estado as string | undefined
     const q = db('quotes as q')
       .leftJoin('users as u', 'u.id', 'q.created_by')
-      .select('q.*', 'u.nombre as vendedor')
+      .select('q.*', db.raw('COALESCE(q.vendedor_ext, u.nombre) as vendedor'))
       .orderBy('q.created_at', 'desc')
       .limit(200)
     if (estado) q.where('q.estado', estado)
@@ -63,7 +63,7 @@ quotesRouter.get('/:id(\\d+)', async (req, res, next) => {
     const quote = await db('quotes as q')
       .leftJoin('users as u', 'u.id', 'q.created_by')
       .leftJoin('users as d', 'd.id', 'q.decided_by')
-      .select('q.*', 'u.nombre as vendedor', 'd.nombre as decidido_por')
+      .select('q.*', db.raw('COALESCE(q.vendedor_ext, u.nombre) as vendedor'), 'd.nombre as decidido_por')
       .where('q.id', Number(req.params.id))
       .first()
     if (!quote) {

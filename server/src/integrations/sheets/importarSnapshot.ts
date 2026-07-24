@@ -1,5 +1,6 @@
 import { db } from '../../db/knex.js'
 import { snapshotOperacion } from '../../db/snapshots/operacion.js'
+import { convertirOpPedidosANativos, type ResultadoConversion } from './convertirOperacion.js'
 
 // Carga el snapshot de la operación del cliente (op_* tablas). Idempotente:
 //  · Pedidos: UPSERT por número (+ reemplaza sus renglones).
@@ -74,15 +75,35 @@ export async function importarSnapshotOperacion(): Promise<ResultadoImport> {
   }
 }
 
-// Carga automática al arrancar SI el espejo está vacío (primer deploy).
-export async function autoImportarSiVacio(): Promise<void> {
+// Importa el snapshot y, acto seguido, convierte los pedidos del cliente en
+// pedidos nativos (fluyen por Aprobaciones / Facturación / Despacho). Es lo que
+// usa el endpoint manual /sync/snapshot.
+export async function importarYConvertir(): Promise<ResultadoImport & { conversion: ResultadoConversion }> {
+  const imp = await importarSnapshotOperacion()
+  const conversion = await convertirOpPedidosANativos()
+  return { ...imp, conversion }
+}
+
+// Arranque: deja la operación lista sin intervención (primer deploy y deploys
+// siguientes). Idempotente en dos pasos:
+//   1. Si el espejo op_* está vacío → importa el snapshot.
+//   2. Si aún no hay pedidos importados en las tablas nativas → los convierte.
+export async function arrancarOperacion(): Promise<void> {
   try {
     if (!snapshotOperacion.pedidos.length) return
-    const [row] = await db('op_pedidos').count({ n: '*' })
-    if (Number(row?.n ?? 0) > 0) return
-    const r = await importarSnapshotOperacion()
-    console.log(`📥 [Snapshot] Operación del cliente importada: ${r.pedidos} pedidos, ${r.estados} estados, ${r.logistica} logística`)
+
+    const [op] = await db('op_pedidos').count({ n: '*' })
+    if (Number(op?.n ?? 0) === 0) {
+      const r = await importarSnapshotOperacion()
+      console.log(`📥 [Snapshot] Operación del cliente importada: ${r.pedidos} pedidos, ${r.estados} estados, ${r.logistica} logística`)
+    }
+
+    const [imp] = await db('quotes').where('fuente', 'importado').count({ n: '*' })
+    if (Number(imp?.n ?? 0) === 0) {
+      const c = await convertirOpPedidosANativos()
+      console.log(`🔁 [Conversión] ${c.quotes} pedidos nativos · ${c.shipments} despachos · próximo #: ${c.proximoNumero ?? '—'}${c.errores ? ` · ${c.errores} con error` : ''}`)
+    }
   } catch (err) {
-    console.error('⚠️ [Snapshot] No se pudo importar la operación:', err instanceof Error ? err.message : err)
+    console.error('⚠️ [Operación] No se pudo preparar la operación:', err instanceof Error ? err.message : err)
   }
 }

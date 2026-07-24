@@ -171,7 +171,20 @@ marino, tipografía a distancia, cursor oculto.
   `CLIENT_ORIGIN=http://80.241.212.7:8080`, `WEB_PORT=8080`, `COOKIE_SECURE=false`
   (¡HTTP! — pasar a `true` al activar HTTPS), `TV_ACCESS_KEY`.
 - **Datos**: la base fue limpiada de demos (`clean.js`); el cliente está validando
-  con datos reales. Numeración arrancó en `COT-0001`/`ENV-0001`.
+  con datos reales.
+- **Pedidos del cliente = pedidos nativos** (migración 021 + `convertirOperacion.ts`):
+  al arrancar, los `op_pedidos` (espejo de sus Sheets) se convierten en `quotes`
+  (+`quote_items`, +`shipments`) marcados `fuente='importado'`, con su etapa mapeada
+  para que **fluyan por los módulos según rol**: Recibido/CXC → Aprobaciones (CxC),
+  Facturación → Facturación, Logística/En Ruta/Entregado → Despacho. No hay página
+  "Pedidos" central: cada rol trabaja su módulo. El espejo `op_*` (Operación del
+  cliente) queda de referencia/solo-lectura para admin. Idempotente: al recargar el
+  snapshot con `/sync/snapshot` re-sincroniza el delta.
+- **Numeración**: seguimos el correlativo del cliente. El pedido nativo nuevo
+  **continúa su secuencia** (entero pelado, sin prefijo `COT-`): el contador `quote`
+  se ajusta al último real (~1189, ignorando números sueltos ≥2000), así el próximo
+  es `1190`. Los envíos siguen con `ENV-XXXX`; los importados conservan el número del
+  pedido del cliente.
 - **Usuarios** (⚠️ contraseña `punky123` en TODOS — cambio pendiente):
   `admin@` (Owner) · `ventas@` · `cxc@` · `despacho@punkypartners.com`.
 - HTTPS: pendiente de que el cliente tenga dominio (guía en `docs/deploy-vps.md` §7).
