@@ -1,11 +1,16 @@
 import { Router } from 'express'
+import { z } from 'zod'
 import { db } from '../db/knex.js'
 import { requireAuth, requireRole } from '../middleware/auth.js'
 
-// Vista (solo lectura) del espejo de la operación del cliente (tablas op_*).
+// Operación del cliente (op_*): traída de sus Sheets y ahora TRABAJABLE aquí.
+// Los pedidos avanzan por etapa en NUESTRA copia (su Sheet queda de referencia).
 export const operacionRouter = Router()
 operacionRouter.use(requireAuth)
-operacionRouter.use(requireRole())
+operacionRouter.use(requireRole('cxc', 'despacho'))
+
+// Etapas del pedido (mismo flujo que su sistema)
+export const ETAPAS = ['Recibido', 'CXC', 'Facturación', 'Logística', 'En Ruta', 'Entregado'] as const
 
 operacionRouter.get('/resumen', async (_req, res, next) => {
   try {
@@ -55,6 +60,34 @@ operacionRouter.get('/pedidos/:numero', async (req, res, next) => {
       db('op_logistica').where('pedido_numero', numero).first(),
     ])
     res.json({ pedido, renglones, estados, logistica: logistica ?? null })
+  } catch (err) {
+    next(err)
+  }
+})
+
+// Cambia la etapa de un pedido (avanzar/retroceder) y deja el registro en la
+// auditoría de estados. Trabaja sobre NUESTRA copia (op_pedidos).
+operacionRouter.patch('/pedidos/:numero/estado', async (req, res, next) => {
+  try {
+    const { estado } = z.object({ estado: z.enum(ETAPAS) }).parse(req.body)
+    const numero = String(req.params.numero)
+    const ped = await db('op_pedidos').where('numero', numero).first()
+    if (!ped) {
+      res.status(404).json({ error: 'Pedido no encontrado' })
+      return
+    }
+    const anterior = ped.estado
+    await db('op_pedidos').where('numero', numero).update({ estado })
+    await db('op_pedido_estados').insert({
+      ts: new Date().toLocaleString('es-VE'),
+      pedido_numero: numero,
+      cliente: ped.cliente,
+      vendedor: ped.vendedor,
+      estado_anterior: anterior,
+      estado_nuevo: estado,
+      usuario: req.user!.email,
+    })
+    res.json({ ok: true, numero, estado })
   } catch (err) {
     next(err)
   }

@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useState } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { BarChart3, Bell, Boxes, CheckCircle, Coins, Database, FileText, HandCoins, KeyRound, Landmark, LayoutGrid, LogOut, MapPin, Menu, PackageSearch, Palette, Phone, ChevronLeft, ReceiptText, Search, ServerCog, ShoppingCart, Sparkles, Truck, Users, Wallet } from 'lucide-react'
+import { BarChart3, Bell, Boxes, CheckCircle, ClipboardList, Coins, Database, FileText, HandCoins, KeyRound, Landmark, LayoutGrid, LogOut, MapPin, Menu, PackageSearch, Palette, Phone, ChevronLeft, ReceiptText, Search, ServerCog, ShoppingCart, Sparkles, Truck, Users, Wallet } from 'lucide-react'
 import { ROL_LABEL, useAuth } from '../lib/auth'
 import { api } from '../lib/api'
 import { useToast } from '../lib/toast'
@@ -25,6 +25,7 @@ const NAV: NavItem[] = [
   { to: '/cotizacion', label: 'Nuevo Pedido', icon: FileText, roles: ['vendedor', 'admin'] },
   { to: '/aprobaciones', label: 'Aprobaciones', icon: CheckCircle, roles: ['cxc', 'admin'], badge: 'pend' },
   { to: '/facturacion', label: 'Facturación', icon: ReceiptText, roles: ['facturacion', 'admin'], badge: 'fact' },
+  { to: '/pedidos', label: 'Pedidos', icon: ClipboardList, roles: ['cxc', 'despacho', 'admin'] },
   { to: '/cuentas-por-cobrar', label: 'Cuentas por Cobrar', icon: Wallet, roles: ['cxc', 'admin'] },
   { to: '/tesoreria', label: 'Tesorería', icon: Landmark, roles: ['cxc', 'admin'] },
   { to: '/despacho', label: 'Despacho', icon: Truck, roles: ['vendedor', 'despacho', 'admin'] },
@@ -37,6 +38,7 @@ const TITULOS: Record<string, string> = {
   '/aprobaciones': 'Aprobaciones',
   '/facturacion': 'Facturación',
   '/cuentas-por-cobrar': 'Cuentas por Cobrar',
+  '/pedidos': 'Pedidos · Flujo por etapa',
   '/tesoreria': 'Tesorería · Flujo de Caja',
   '/ventas': 'Ventas Analítica',
   '/comisiones': 'Comisiones',

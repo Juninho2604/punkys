@@ -28,6 +28,7 @@ import { Reposicion } from './pages/Reposicion'
 import { Lineas } from './pages/Lineas'
 import { NotifConfig } from './pages/NotifConfig'
 import { OperacionEspejo } from './pages/OperacionEspejo'
+import { Pedidos } from './pages/Pedidos'
 import type { Rol } from './lib/types'
 
 function Protegida({ roles, children }: { roles?: Rol[]; children: React.ReactNode }) {
@@ -64,6 +65,7 @@ function Rutas() {
         <Route path="/despacho" element={<Protegida roles={['vendedor', 'despacho']}><Despacho /></Protegida>} />
         <Route path="/despacho/:id" element={<Protegida roles={['vendedor', 'despacho']}><DespachoDetalle /></Protegida>} />
         <Route path="/cuentas-por-cobrar" element={<Protegida roles={['cxc']}><CuentasPorCobrar /></Protegida>} />
+        <Route path="/pedidos" element={<Protegida roles={['cxc', 'despacho']}><Pedidos /></Protegida>} />
         <Route path="/tesoreria" element={<Protegida roles={['cxc']}><Tesoreria /></Protegida>} />
         <Route path="/ventas" element={<Protegida roles={[]}><Ventas /></Protegida>} />
         <Route path="/comisiones" element={<Protegida roles={[]}><Comisiones /></Protegida>} />
