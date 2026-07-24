@@ -17,10 +17,10 @@ interface Data {
   productos: Producto[]; almacenes: Almacen[]; categorias: Categoria[]; actualizado: string | null
 }
 
-const Si = ({ v }: { v: boolean }) => (
-  <span className="badge" style={{ background: v ? 'var(--success-soft)' : 'var(--line-soft)', color: v ? 'var(--success-600)' : 'var(--ink-300)' }}>
+const Tog = ({ v, onClick }: { v: boolean; onClick: () => void }) => (
+  <button onClick={onClick} className="badge" style={{ cursor: 'pointer', border: 'none', background: v ? 'var(--success-soft)' : 'var(--line-soft)', color: v ? 'var(--success-600)' : 'var(--ink-300)' }}>
     {v ? 'Sí' : 'No'}
-  </span>
+  </button>
 )
 
 export function Catalogos() {
@@ -40,14 +40,14 @@ export function Catalogos() {
 
   const vacio = data.productos.length + data.almacenes.length + data.categorias.length === 0
 
-  const refrescar = async () => {
+  // Editar una bandera del catálogo (nuestra copia manda; actualiza en el acto).
+  async function toggle(entidad: 'productos' | 'almacenes' | 'categorias', claveField: 'codigo' | 'categoria', claveVal: string, campo: string, actual: boolean) {
     setOcupado(true)
     try {
-      const r = await api.post<{ ok: boolean; detalle: string }>('/sync/sheets/refresh')
-      toast(r.ok ? `Clonado ✓ (${r.detalle})` : `Aviso: ${r.detalle}`)
-      cargar()
+      await api.patch(`/operacional/${entidad}/${encodeURIComponent(claveVal)}`, { [campo]: !actual })
+      setData((d) => (d ? ({ ...d, [entidad]: (d[entidad] as unknown as Record<string, unknown>[]).map((r) => (r[claveField] === claveVal ? { ...r, [campo]: !actual } : r)) } as Data) : d))
     } catch (err) {
-      toast(err instanceof Error ? err.message : 'No se pudo refrescar')
+      toast(err instanceof Error ? err.message : 'No se pudo actualizar')
     } finally {
       setOcupado(false)
     }
@@ -65,17 +65,16 @@ export function Catalogos() {
         <div>
           <h1 className="h1-module">Catálogos operacionales</h1>
           <p className="subtitle">
-            Espejo de solo lectura desde el Sheet del cliente ("Punky - Configuración").{' '}
-            {data.actualizado ? `Clonado ${new Date(data.actualizado).toLocaleString('es-VE')}.` : 'Sin clonar aún — configurar las URLs de Sheets (ver docs).'}
+            Configuración del cliente traída de su Sheet, <b>editable desde aquí</b> (nuestra copia manda). Toca los <b>Sí/No</b> para activar/desactivar visibilidad y foco.
           </p>
         </div>
-        <button className="btn btn-secondary" disabled={ocupado} onClick={refrescar}>{ocupado ? 'Clonando…' : 'Refrescar ahora'}</button>
+        <button className="btn btn-secondary" disabled={ocupado} onClick={cargar}>Actualizar</button>
       </div>
 
       {vacio ? (
         <div className="card" style={{ padding: 28, textAlign: 'center' }}>
           <div className="cell-sub">
-            Aún no hay catálogos clonados. Se cargan del Google Sheet vía las URLs <code>SHEETS_URL_*</code> del <code>.env</code> (ver <code>docs/migracion-sheets.md</code>).
+            Aún no hay catálogos. Se cargan solos al desplegar (snapshot del cliente) o con “Recargar snapshot” en <b>Operación (espejo)</b>.
           </div>
         </div>
       ) : (
@@ -99,8 +98,8 @@ export function Catalogos() {
                     <span className="cell-main">{p.nombre}</span>
                     <span className="cell-sub">{p.marca ?? '—'}</span>
                     <span className="cell-sub">{p.categoria ?? '—'}</span>
-                    <span><Si v={p.mostrar_vendedores} /></span>
-                    <span>{p.foco_mes ? <span className="badge" style={{ background: 'var(--warning-soft)', color: 'var(--warning-600)' }}>★</span> : '—'}</span>
+                    <span><Tog v={p.mostrar_vendedores} onClick={() => toggle('productos', 'codigo', p.codigo, 'mostrar_vendedores', p.mostrar_vendedores)} /></span>
+                    <span><Tog v={p.foco_mes} onClick={() => toggle('productos', 'codigo', p.codigo, 'foco_mes', p.foco_mes)} /></span>
                   </div>
                 ))}
               </div></div>
@@ -118,10 +117,10 @@ export function Catalogos() {
                   <div key={a.codigo} className="table-row" style={{ gridTemplateColumns: '0.7fr 2fr 0.7fr 0.7fr 0.7fr 0.7fr', cursor: 'default' }}>
                     <span className="cell-sub">{a.codigo}</span>
                     <span className="cell-main">{a.nombre}</span>
-                    <span><Si v={a.activo} /></span>
-                    <span><Si v={a.mostrar_admin} /></span>
-                    <span><Si v={a.mostrar_vendedor} /></span>
-                    <span><Si v={a.mostrar_inventario} /></span>
+                    <span><Tog v={a.activo} onClick={() => toggle('almacenes', 'codigo', a.codigo, 'activo', a.activo)} /></span>
+                    <span><Tog v={a.mostrar_admin} onClick={() => toggle('almacenes', 'codigo', a.codigo, 'mostrar_admin', a.mostrar_admin)} /></span>
+                    <span><Tog v={a.mostrar_vendedor} onClick={() => toggle('almacenes', 'codigo', a.codigo, 'mostrar_vendedor', a.mostrar_vendedor)} /></span>
+                    <span><Tog v={a.mostrar_inventario} onClick={() => toggle('almacenes', 'codigo', a.codigo, 'mostrar_inventario', a.mostrar_inventario)} /></span>
                   </div>
                 ))}
               </div></div>
@@ -139,8 +138,8 @@ export function Catalogos() {
                   <div key={c.categoria} className="table-row" style={{ gridTemplateColumns: '2fr 1fr 0.8fr 0.8fr', cursor: 'default' }}>
                     <span className="cell-main" style={{ textTransform: 'capitalize' }}>{c.categoria}</span>
                     <span className="cell-sub">{c.marca ?? '—'}</span>
-                    <span><Si v={c.activo} /></span>
-                    <span><Si v={c.mostrar_dashboard} /></span>
+                    <span><Tog v={c.activo} onClick={() => toggle('categorias', 'categoria', c.categoria, 'activo', c.activo)} /></span>
+                    <span><Tog v={c.mostrar_dashboard} onClick={() => toggle('categorias', 'categoria', c.categoria, 'mostrar_dashboard', c.mostrar_dashboard)} /></span>
                   </div>
                 ))}
               </div></div>
