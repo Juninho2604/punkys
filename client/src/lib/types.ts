@@ -74,6 +74,20 @@ export interface Shipment {
   done: number
   incidencia: boolean
   created_at: string
+  // Logística (paridad con la hoja del cliente)
+  nro_nota?: string | null
+  tipo_transporte?: string | null
+  ruta?: string | null
+  devolucion?: string | null
+  unidades_fable?: number | string | null
+  unidades_pp?: number | string | null
+  monto_fable?: number | string | null
+  monto_pp?: number | string | null
+  kilos?: number | string | null
+  promesa_entrega?: string | null
+  compromiso_logistica?: string | null
+  incidencia_detalle?: string | null
+  comentario_logistica?: string | null
 }
 
 export interface Milestone {

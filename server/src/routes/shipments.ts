@@ -151,6 +151,45 @@ shipmentsRouter.patch('/:id/costos', requireRole('despacho'), async (req, res, n
   }
 })
 
+// Datos de logística/despacho (paridad con la hoja "Logística" del cliente)
+const logisticaSchema = z.object({
+  nroNota: z.string().trim().max(60).optional(),
+  tipoTransporte: z.string().trim().max(60).optional(),
+  ruta: z.string().trim().max(120).optional(),
+  devolucion: z.string().trim().max(200).optional(),
+  unidadesFable: z.coerce.number().nonnegative().optional(),
+  unidadesPp: z.coerce.number().nonnegative().optional(),
+  montoFable: z.coerce.number().nonnegative().optional(),
+  montoPp: z.coerce.number().nonnegative().optional(),
+  kilos: z.coerce.number().nonnegative().optional(),
+  promesaEntrega: z.string().trim().optional(),
+  compromisoLogistica: z.string().trim().optional(),
+  incidenciaDetalle: z.string().trim().max(400).optional(),
+  comentarioLogistica: z.string().trim().max(400).optional(),
+})
+
+shipmentsRouter.patch('/:id/logistica', requireRole('despacho'), async (req, res, next) => {
+  try {
+    const d = logisticaSchema.parse(req.body)
+    const cols: Record<string, string> = {
+      nroNota: 'nro_nota', tipoTransporte: 'tipo_transporte', ruta: 'ruta', devolucion: 'devolucion',
+      unidadesFable: 'unidades_fable', unidadesPp: 'unidades_pp', montoFable: 'monto_fable', montoPp: 'monto_pp',
+      kilos: 'kilos', promesaEntrega: 'promesa_entrega', compromisoLogistica: 'compromiso_logistica',
+      incidenciaDetalle: 'incidencia_detalle', comentarioLogistica: 'comentario_logistica',
+    }
+    const update: Record<string, unknown> = { updated_at: db.fn.now() }
+    for (const [k, col] of Object.entries(cols)) {
+      const v = (d as Record<string, unknown>)[k]
+      if (v !== undefined) update[col] = v === '' ? null : v
+    }
+    const [shipment] = await db('shipments').where({ id: Number(req.params.id) }).update(update).returning('*')
+    if (!shipment) throw new HttpError(404, 'Envío no encontrado')
+    res.json({ shipment })
+  } catch (err) {
+    next(err)
+  }
+})
+
 shipmentsRouter.post('/:id/advance', requireRole('despacho'), async (req, res, next) => {
   try {
     const shipment = await avanzarEnvio(Number(req.params.id))

@@ -18,6 +18,8 @@ export function DespachoDetalle() {
   const [editando, setEditando] = useState(false)
   const [transportista, setTransportista] = useState('')
   const [placa, setPlaca] = useState('')
+  const [logEdit, setLogEdit] = useState(false)
+  const [log, setLog] = useState<Record<string, string>>({})
 
   const cargar = useCallback(() => {
     api
@@ -28,6 +30,15 @@ export function DespachoDetalle() {
         setDocs(r.docs)
         setTransportista(r.shipment.transportista)
         setPlaca(r.shipment.placa ?? '')
+        const s = r.shipment
+        const v = (x: unknown) => (x == null ? '' : String(x))
+        setLog({
+          nroNota: v(s.nro_nota), tipoTransporte: v(s.tipo_transporte), ruta: v(s.ruta), devolucion: v(s.devolucion),
+          kilos: v(s.kilos), unidadesFable: v(s.unidades_fable), unidadesPp: v(s.unidades_pp),
+          montoFable: v(s.monto_fable), montoPp: v(s.monto_pp),
+          promesaEntrega: v(s.promesa_entrega).slice(0, 10), compromisoLogistica: v(s.compromiso_logistica).slice(0, 10),
+          incidenciaDetalle: v(s.incidencia_detalle), comentarioLogistica: v(s.comentario_logistica),
+        })
       })
       .catch(console.error)
   }, [id])
@@ -63,6 +74,17 @@ export function DespachoDetalle() {
       await api.patch(`/shipments/${shipment!.id}`, { transportista, placa })
       toast('Transportista actualizado ✓')
       setEditando(false)
+      cargar()
+    } catch (err) {
+      toast(err instanceof Error ? err.message : 'No se pudo guardar')
+    }
+  }
+
+  async function guardarLogistica() {
+    try {
+      await api.patch(`/shipments/${shipment!.id}/logistica`, log)
+      toast('Logística actualizada ✓')
+      setLogEdit(false)
       cargar()
     } catch (err) {
       toast(err instanceof Error ? err.message : 'No se pudo guardar')
@@ -147,6 +169,51 @@ export function DespachoDetalle() {
             </div>
           </div>
 
+          <div className="card" style={{ padding: '22px 24px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+              <div className="h3-card">Logística y despacho</div>
+              {gestiona && (
+                <button className="header-logout" title="Editar logística" onClick={() => setLogEdit((e) => !e)}>
+                  <Pencil size={15} strokeWidth={2.4} />
+                </button>
+              )}
+            </div>
+            {logEdit ? (
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <LogInput label="Nº Nota entrega" k="nroNota" log={log} setLog={setLog} />
+                <LogInput label="Tipo transporte" k="tipoTransporte" log={log} setLog={setLog} ph="Moto, Camión…" />
+                <LogInput label="Ruta" k="ruta" log={log} setLog={setLog} />
+                <LogInput label="Kilos aprox." k="kilos" log={log} setLog={setLog} num />
+                <LogInput label="Unidades Fable" k="unidadesFable" log={log} setLog={setLog} num />
+                <LogInput label="Unidades PP" k="unidadesPp" log={log} setLog={setLog} num />
+                <LogInput label="Monto Fable" k="montoFable" log={log} setLog={setLog} num />
+                <LogInput label="Monto PP" k="montoPp" log={log} setLog={setLog} num />
+                <LogInput label="Promesa entrega" k="promesaEntrega" log={log} setLog={setLog} date />
+                <LogInput label="Compromiso logística" k="compromisoLogistica" log={log} setLog={setLog} date />
+                <LogInput label="Devolución" k="devolucion" log={log} setLog={setLog} />
+                <LogInput label="Incidencia (detalle)" k="incidenciaDetalle" log={log} setLog={setLog} />
+                <div style={{ gridColumn: '1/-1' }}><LogInput label="Comentario logística" k="comentarioLogistica" log={log} setLog={setLog} /></div>
+                <div style={{ gridColumn: '1/-1', display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+                  <button className="btn btn-secondary" onClick={() => setLogEdit(false)}>Cancelar</button>
+                  <button className="btn btn-primary" onClick={guardarLogistica}>Guardar</button>
+                </div>
+              </div>
+            ) : (
+              <div className="detail-datos">
+                {[
+                  ['Nº Nota', log.nroNota], ['Transporte', log.tipoTransporte], ['Ruta', log.ruta],
+                  ['Kilos', log.kilos], ['Und. Fable', log.unidadesFable], ['Und. PP', log.unidadesPp],
+                  ['Monto Fable', log.montoFable], ['Monto PP', log.montoPp],
+                  ['Promesa', log.promesaEntrega], ['Compromiso', log.compromisoLogistica],
+                  ['Devolución', log.devolucion], ['Incidencia', log.incidenciaDetalle], ['Comentario', log.comentarioLogistica],
+                ].filter(([, v]) => v).map(([l, v]) => <Dato key={l} label={l as string} valor={v as string} />)}
+                {![log.nroNota, log.tipoTransporte, log.ruta, log.kilos, log.unidadesFable, log.unidadesPp, log.montoFable, log.montoPp, log.promesaEntrega, log.compromisoLogistica, log.devolucion, log.incidenciaDetalle, log.comentarioLogistica].some(Boolean) && (
+                  <div className="cell-sub" style={{ gridColumn: '1/-1' }}>Sin datos de logística. {gestiona ? 'Toca el lápiz para agregarlos.' : ''}</div>
+                )}
+              </div>
+            )}
+          </div>
+
           <div className="docs-map-grid">
             <div style={{ background: '#fff', border: '2px dashed var(--sky-200)', borderRadius: 14, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, padding: 28, minHeight: 150 }}>
               <Map size={28} strokeWidth={2} color="var(--ink-300)" />
@@ -166,6 +233,23 @@ export function DespachoDetalle() {
           </div>
         </div>
       </div>
+    </div>
+  )
+}
+
+function LogInput({ label, k, log, setLog, ph, num, date }: { label: string; k: string; log: Record<string, string>; setLog: (f: (s: Record<string, string>) => Record<string, string>) => void; ph?: string; num?: boolean; date?: boolean }) {
+  return (
+    <div className="field">
+      <label className="field-label" style={{ color: 'var(--ink-300)', fontSize: 11.5 }}>{label}</label>
+      <input
+        className="input-text"
+        style={{ padding: '8px 10px', fontSize: 13 }}
+        type={date ? 'date' : num ? 'number' : 'text'}
+        inputMode={num ? 'decimal' : undefined}
+        placeholder={ph}
+        value={log[k] ?? ''}
+        onChange={(e) => setLog((s) => ({ ...s, [k]: e.target.value }))}
+      />
     </div>
   )
 }
