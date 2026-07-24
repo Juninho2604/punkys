@@ -397,3 +397,13 @@ syncRouter.get('/estado', requireAuth, requireRole(), async (_req, res, next) =>
     next(err)
   }
 })
+
+// Importa el snapshot de la operación del cliente (op_* espejo). Solo admin.
+syncRouter.post('/snapshot', requireAuth, requireRole(), async (_req, res, next) => {
+  try {
+    const { importarSnapshotOperacion } = await import('../integrations/sheets/importarSnapshot.js')
+    res.json(await importarSnapshotOperacion())
+  } catch (err) {
+    next(err)
+  }
+})
