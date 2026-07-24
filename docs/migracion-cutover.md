@@ -105,23 +105,21 @@ No se modifica ni borra nada en sus Sheets en ningún momento.
 
 ### Huecos a cerrar ANTES de garantizar paridad 100 %
 
-1. **Campos de logística en `shipments`.** Su hoja de Logística captura cosas que
-   hoy no guardamos:
-   - `Tipo de Transporte` (Moto/…), `Ruta`, `Devolución`.
-   - **Unidades Fable / Unidades PP** y **Monto Fable / Monto PP** (split por línea).
-   - `Kilos Aprox`, `Promesa de Entrega` vs `Fecha Compromiso Logística`,
-     `Días para Entregar`, `Detalle Incidencia`, `Comentario Logística`.
-   → Se agregan como columnas a `shipments` (aditivo, bajo riesgo).
-2. **Nº de Nota de entrega** en Facturación (hoy guardamos Nº Factura, falta Nº Nota).
-3. **Config de notificaciones**: `notif_grupos` + `notif_tipos` (flags + ruteo) —
-   base para activar las notificaciones reales. Depende también de **SMTP** (dueño).
-4. **Control de líneas telefónicas** (17 líneas por depto.) — utilitario menor.
-   _Decisión de alcance: ¿dentro o fuera?_
-5. **El importador** en sí (parser de `Productos`, cruces, idempotencia).
+1. ✅ **Campos de logística en `shipments`** (tipo transporte, ruta, devolución,
+   Fable/PP, kilos, promesa/compromiso, incidencia, comentario) — migración 018 +
+   panel editable en Despacho.
+2. ✅ **Nº de Nota de entrega** — `shipments.nro_nota` + en el panel de logística.
+3. ✅ **Control de líneas telefónicas** — módulo propio (migración 019 + página).
+4. ⏳ **Config de notificaciones**: tablas `notif_grupos` + `notif_tipos` creadas
+   (migración 018); falta la **página admin** para gestionarlas y el cableo al
+   envío real (depende de **SMTP** del dueño).
+5. ⏳ **El importador** de solo lectura (parser de `Productos` a renglones,
+   cruces cliente/almacén/vendedor, idempotencia) — se construye contra la vía
+   de acceso a los Sheets (cuenta de servicio recomendada).
 
-> Lectura honesta: en lo administrativo y de cobranza estamos **por encima**. La
-> paridad total depende de cerrar los campos de logística (#1) y el importador
-> (#5); lo demás es config/menor.
+> Lectura honesta: en lo administrativo, cobranza y **ahora logística** estamos a
+> la par o por encima. Para el cierre total quedan la config de notificaciones
+> (página + SMTP) y el importador (que necesita el acceso a los Sheets).
 
 ---
 
