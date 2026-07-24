@@ -40,10 +40,16 @@ export interface SnapshotOperacion {
   contactos: Record<string, unknown>[]
   notif_grupos: Record<string, unknown>[]
   notif_tipos: Record<string, unknown>[]
+  productos: Record<string, unknown>[]
+  almacenes: Record<string, unknown>[]
+  categorias: Record<string, unknown>[]
 }
 
 export const snapshotOperacion: SnapshotOperacion = {
   "generado": "2026-07-23",
+  "productos": [],
+  "almacenes": [],
+  "categorias": [],
   "pedidos": [
     {
       "numero": "1025",

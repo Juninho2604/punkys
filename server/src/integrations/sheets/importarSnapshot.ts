@@ -50,6 +50,11 @@ export async function importarSnapshotOperacion(): Promise<ResultadoImport> {
     for (const g of s.notif_grupos) await trx('notif_grupos').insert(g).onConflict('grupo').merge()
     for (const t of s.notif_tipos) await trx('notif_tipos').insert(t).onConflict('clave').merge()
 
+    // Catálogos curados (upsert por clave primaria)
+    for (const p of s.productos) await trx('op_productos').insert(p).onConflict('codigo').merge()
+    for (const a of s.almacenes) await trx('op_almacenes').insert(a).onConflict('codigo').merge()
+    for (const c of s.categorias) await trx('op_categorias').insert(c).onConflict('categoria').merge()
+
     await trx('sync_log').insert({
       dataset: 'snapshot_operacion',
       fuente: `Sheets cliente (${s.generado})`,
