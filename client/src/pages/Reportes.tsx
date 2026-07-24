@@ -56,17 +56,8 @@ export function Reportes() {
   return (
     <div className="fade-up" style={{ display: 'flex', flexDirection: 'column', gap: 16, maxWidth: 760 }}>
       <p className="subtitle" style={{ margin: 0 }}>
-        Resumen ejecutivo del negocio (ventas, cobranzas, cartera y pedidos) redactado por IA a partir de los datos de Profit y la intranet.
+        Reporte ejecutivo del negocio (ventas, cobranzas, cartera, compras y pedidos) con KPIs, tendencias y alertas automáticas, a partir de los datos de Profit y la intranet.
       </p>
-
-      {estado && !estado.habilitado && (
-        <div className="card" style={{ padding: 14, border: '1px solid var(--warning-200, #f0d68a)', background: 'var(--warning-soft, #fff8e6)' }}>
-          <div style={{ font: '700 13px var(--font-ui)', color: 'var(--warning-700, #8a6d1a)' }}>IA no configurada</div>
-          <div className="caption" style={{ marginTop: 2 }}>
-            Falta la clave <b>ANTHROPIC_API_KEY</b> en el servidor. Mientras tanto verás un resumen con los números crudos; el análisis redactado se activa al poner la clave.
-          </div>
-        </div>
-      )}
 
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
         <button className="btn btn-cta" onClick={generar} disabled={generando}>
@@ -88,14 +79,17 @@ export function Reportes() {
         <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
           <div style={{ padding: '10px 16px', borderBottom: '1px solid var(--line-100)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
             <span style={{ font: '800 13px var(--font-ui)', color: 'var(--ink-900)' }}>{reporte.titulo}</span>
-            <span className="caption">{reporte.conIA ? '🧠 Redactado por IA' : 'Resumen sin IA'}</span>
+            <span className="caption">{reporte.conIA ? '🧠 Con narrativa IA' : 'Reporte determinista'}</span>
           </div>
           <div style={{ padding: 18 }} dangerouslySetInnerHTML={{ __html: reporte.html }} />
         </div>
       )}
 
-      {estado?.habilitado && (
-        <p className="caption">Se envía automáticamente cada día a las {estado.horaDiario}:00 (hora del servidor) · modelo {estado.modelo}.</p>
+      {estado && (
+        <p className="caption">
+          Se envía automáticamente cada día a las {estado.horaDiario}:00 (hora de Venezuela) a los administradores.
+          {estado.habilitado ? ` Incluye narrativa redactada por IA (${estado.modelo}).` : ' Reporte determinista, sin costo de API.'}
+        </p>
       )}
     </div>
   )
