@@ -2,11 +2,20 @@
 // rápido. Estrategia: network-first para la navegación (siempre datos frescos),
 // con caché de respaldo del shell si no hay red. NO cachea /api (datos en vivo).
 
-const CACHE = 'punky-shell-v1'
-const SHELL = ['/', '/index.html', '/logo-circulo.png', '/logo-letters.png', '/manifest.webmanifest']
+// Al subir esta versión, el handler de 'activate' borra los cachés viejos en
+// TODOS los dispositivos al recargar (soluciona cachés obsoletos, p.ej. cuando
+// "en el teléfono sí y en el PC no").
+const CACHE = 'punky-shell-v2'
+const SHELL = ['/', '/index.html', '/logo-isotipo.png', '/manifest.webmanifest']
+
+// Precache resiliente: si un recurso falla (404), no tumba la instalación.
+async function precache() {
+  const c = await caches.open(CACHE)
+  await Promise.allSettled(SHELL.map((u) => c.add(u)))
+}
 
 self.addEventListener('install', (e) => {
-  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()))
+  e.waitUntil(precache().then(() => self.skipWaiting()))
 })
 
 self.addEventListener('activate', (e) => {
