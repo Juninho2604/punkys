@@ -5,31 +5,48 @@ import { requireAuth } from '../middleware/auth.js'
 export const dashboardRouter = Router()
 dashboardRouter.use(requireAuth)
 
+// Resumen operativo. Combina lo que la intranet YA tiene aunque nadie haya
+// cotizado nativamente todavía: finanzas de Profit (pp_*), la operación del
+// cliente traída de sus Sheets (op_pedidos) y la actividad nativa (quotes/
+// shipments). Así el tablero muestra el negocio real desde el día uno.
 dashboardRouter.get('/', async (_req, res, next) => {
   try {
-    const [{ count: activos }] = await db('shipments').whereNot('estado', 'Entregado').count()
-    const [{ count: nuevosSemana }] = await db('shipments')
-      .where('created_at', '>=', db.raw(`now() - interval '7 days'`))
-      .count()
+    const n = (v: unknown) => Number(v ?? 0)
+    const existe = async (t: string) => Boolean((await db.raw("SELECT to_regclass(?) AS t", [t])).rows?.[0]?.t)
+    const hayOp = await existe('op_pedidos')
 
-    const [{ count: cotizacionesMes }] = await db('quotes')
-      .where('created_at', '>=', db.raw(`date_trunc('month', now())`))
-      .count()
-    const [{ count: cotizacionesMesAnterior }] = await db('quotes')
-      .where('created_at', '>=', db.raw(`date_trunc('month', now()) - interval '1 month'`))
-      .andWhere('created_at', '<', db.raw(`date_trunc('month', now())`))
-      .count()
-    const mesAnt = Number(cotizacionesMesAnterior)
-    const deltaCotizaciones = mesAnt > 0 ? Math.round(((Number(cotizacionesMes) - mesAnt) / mesAnt) * 100) : null
+    // Ventas del mes (Profit)
+    const [ventas] = await db('pp_ventas')
+      .where('mes', db.raw("to_char(current_date,'YYYY-MM')"))
+      .sum({ bs: 'monto_usd' })
+      .sum({ usd: 'monto_usd_real' })
 
-    const [{ count: porAprobar }] = await db('quotes').where('estado', 'pendiente').count()
+    // Cartera por cobrar (Profit)
+    const [cxc] = await db('pp_cxc')
+      .sum({ saldoBs: 'saldo' })
+      .sum({ saldoUsd: 'saldo_usd' })
+      .sum({ vencidoBs: db.raw('case when dias_vencido > 0 and saldo > 0 then saldo else 0 end') })
 
-    const [{ count: entregados }] = await db('shipments').where('estado', 'Entregado').count()
-    const [{ count: incidencias }] = await db('shipments').where('incidencia', true).count()
-    const totalCerrados = Number(entregados) + Number(incidencias)
-    const entregasATiempo = totalCerrados > 0 ? Math.round((Number(entregados) / totalCerrados) * 100) : 100
+    // Pedidos activos y por aprobar: operación del cliente (op_pedidos) + nativo
+    const opActivos = hayOp ? n((await db('op_pedidos').whereRaw("coalesce(estado,'') not ilike 'entregado'").count())[0]?.count) : 0
+    const opCxc = hayOp ? n((await db('op_pedidos').whereRaw("lower(coalesce(estado,'')) = 'cxc'").count())[0]?.count) : 0
+    const shipActivos = n((await db('shipments').whereNot('estado', 'Entregado').count())[0]?.count)
+    const quotesPend = n((await db('quotes').where('estado', 'pendiente').count())[0]?.count)
 
-    const recientes = await db('shipments').orderBy('created_at', 'desc').limit(4)
+    // Pedidos recientes: de la operación del cliente; si no hay, envíos nativos
+    let recientes: Record<string, unknown>[] = []
+    if (hayOp) {
+      recientes = await db('op_pedidos')
+        .orderBy('fecha_pedido', 'desc')
+        .limit(6)
+        .select('numero', 'cliente', 'vendedor', 'estado', 'fecha_pedido', 'monto_usd')
+    }
+    if (!recientes.length) {
+      const env = await db('shipments').orderBy('created_at', 'desc').limit(6).select('numero', 'cliente', 'estado', 'destino_ciudad')
+      recientes = env.map((s) => ({ numero: s.numero, cliente: s.cliente, vendedor: null, estado: s.estado, fecha_pedido: null, monto_usd: null }))
+    }
+
+    // Por aprobar (con acción nativa): cotizaciones pendientes de la intranet
     const pendientes = await db('quotes as q')
       .leftJoin('users as u', 'u.id', 'q.created_by')
       .select('q.*', 'u.nombre as vendedor')
@@ -39,12 +56,13 @@ dashboardRouter.get('/', async (_req, res, next) => {
 
     res.json({
       kpis: {
-        enviosActivos: Number(activos),
-        enviosNuevosSemana: Number(nuevosSemana),
-        cotizacionesMes: Number(cotizacionesMes),
-        deltaCotizaciones,
-        porAprobar: Number(porAprobar),
-        entregasATiempo,
+        ventasMesBs: n(ventas?.bs),
+        ventasMesUsd: n(ventas?.usd),
+        carteraBs: n(cxc?.saldoBs),
+        carteraUsd: n(cxc?.saldoUsd),
+        vencidoBs: n(cxc?.vencidoBs),
+        pedidosActivos: opActivos + shipActivos,
+        porAprobar: opCxc + quotesPend,
       },
       recientes,
       pendientes,

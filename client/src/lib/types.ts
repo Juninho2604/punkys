@@ -111,15 +111,24 @@ export interface Servicio {
   porKg: number
 }
 
+export interface DashboardReciente {
+  numero: string
+  cliente: string
+  vendedor: string | null
+  estado: string | null
+  fecha_pedido: string | null
+  monto_usd: number | string | null
+}
 export interface DashboardData {
   kpis: {
-    enviosActivos: number
-    enviosNuevosSemana: number
-    cotizacionesMes: number
-    deltaCotizaciones: number | null
+    ventasMesBs: number
+    ventasMesUsd: number
+    carteraBs: number
+    carteraUsd: number
+    vencidoBs: number
+    pedidosActivos: number
     porAprobar: number
-    entregasATiempo: number
   }
-  recientes: Shipment[]
+  recientes: DashboardReciente[]
   pendientes: Quote[]
 }

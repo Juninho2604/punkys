@@ -2,10 +2,10 @@ import { useCallback, useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { api } from '../lib/api'
 import { fmtBs, hoyLargo } from '../lib/format'
+import { bs, bsUsd, etiquetaTasa, useTasa } from '../lib/moneda'
 import { useAuth } from '../lib/auth'
 import { useToast } from '../lib/toast'
 import { usePend } from '../components/Shell'
-import { Badge } from '../components/Badge'
 import type { DashboardData } from '../lib/types'
 import { SERVICIO_NOMBRE } from './Cotizacion'
 
@@ -15,6 +15,7 @@ export function Dashboard() {
   const navigate = useNavigate()
   const { refreshPend } = usePend()
   const [data, setData] = useState<DashboardData | null>(null)
+  const tasa = useTasa()
 
   const cargar = useCallback(() => {
     api.get<DashboardData>('/dashboard').then(setData).catch(console.error)
@@ -48,27 +49,27 @@ export function Dashboard() {
 
       <div className="kpi-grid">
         <div className="card card-kpi">
-          <div className="field-label">Envíos activos</div>
-          <div className="kpi-value">{kpis.enviosActivos}</div>
-          <div className="kpi-delta" style={{ color: 'var(--success-600)' }}>▲ {kpis.enviosNuevosSemana} esta semana</div>
+          <div className="field-label">Ventas del mes</div>
+          <div className="kpi-value" style={{ fontSize: 22 }}>{bsUsd(kpis.ventasMesBs, kpis.ventasMesUsd)}</div>
+          <div className="kpi-delta" style={{ color: 'var(--ink-500)' }}>{etiquetaTasa(tasa)}</div>
         </div>
         <div className="card card-kpi">
-          <div className="field-label">Cotizaciones del mes</div>
-          <div className="kpi-value">{kpis.cotizacionesMes}</div>
-          <div className="kpi-delta" style={{ color: kpis.deltaCotizaciones !== null && kpis.deltaCotizaciones < 0 ? 'var(--danger-500)' : 'var(--success-600)' }}>
-            {kpis.deltaCotizaciones === null ? 'Sin mes anterior' : `${kpis.deltaCotizaciones >= 0 ? '▲' : '▼'} ${Math.abs(kpis.deltaCotizaciones)}% vs. mes anterior`}
+          <div className="field-label">Cartera por cobrar</div>
+          <div className="kpi-value" style={{ fontSize: 22 }}>{bsUsd(kpis.carteraBs, kpis.carteraUsd)}</div>
+          <div className="kpi-delta" style={{ color: kpis.vencidoBs > 0 ? 'var(--danger-500)' : 'var(--success-600)' }}>
+            {kpis.vencidoBs > 0 ? `Vencido: ${bs(kpis.vencidoBs)}` : 'Sin vencido'}
           </div>
         </div>
         <div className="card card-kpi">
-          <div className="field-label">Por aprobar</div>
-          <div className="kpi-value">{kpis.porAprobar}</div>
-          <div className="kpi-delta" style={{ color: 'var(--warning-600)' }}>Requieren tu decisión</div>
+          <div className="field-label">Pedidos activos</div>
+          <div className="kpi-value">{kpis.pedidosActivos}</div>
+          <div className="kpi-delta" style={{ color: 'var(--ink-500)' }}>En proceso (Recibido → En ruta)</div>
         </div>
         <div className="card card-kpi">
-          <div className="field-label">Entregas a tiempo</div>
-          <div className="kpi-value">{kpis.entregasATiempo}%</div>
-          <div className="kpi-delta" style={{ color: kpis.entregasATiempo < 96 ? 'var(--danger-500)' : 'var(--success-600)' }}>
-            {kpis.entregasATiempo < 96 ? '▼ Bajo la meta (96%)' : '▲ En meta'}
+          <div className="field-label">Por aprobar (CxC)</div>
+          <div className="kpi-value">{kpis.porAprobar}</div>
+          <div className="kpi-delta" style={{ color: kpis.porAprobar > 0 ? 'var(--warning-600)' : 'var(--success-600)' }}>
+            {kpis.porAprobar > 0 ? 'Requieren decisión' : 'Al día'}
           </div>
         </div>
       </div>
@@ -76,23 +77,23 @@ export function Dashboard() {
       <div className="dash-grid">
         <div className="card" style={{ overflow: 'hidden' }}>
           <div className="card-header">
-            <div className="h3-card">Envíos recientes</div>
-            <Link to="/despacho" className="link">Ver todos →</Link>
+            <div className="h3-card">Pedidos recientes</div>
+            <Link to="/operacion-espejo" className="link">Ver todos →</Link>
           </div>
           <div className="table-scroll">
             <div className="table-min-560">
               <div className="table-head cols-envios">
-                <span>Envío</span><span>Cliente</span><span>Ruta</span><span>Estado</span>
+                <span>Pedido</span><span>Cliente</span><span>Estado</span><span>Monto</span>
               </div>
               {data.recientes.length === 0 && (
-                <div style={{ padding: '18px 20px' }} className="cell-sub">Aún no hay envíos. Se crean automáticamente al aprobar una cotización.</div>
+                <div style={{ padding: '18px 20px' }} className="cell-sub">Aún no hay pedidos. Aparecen al importar la operación del cliente o al cotizar en la intranet.</div>
               )}
-              {data.recientes.map((s) => (
-                <div key={s.id} className="table-row cols-envios" onClick={() => navigate(`/despacho/${s.id}`)}>
-                  <span className="cell-id">{s.numero}</span>
-                  <span className="cell-main">{s.cliente}</span>
-                  <span className="cell-sub">{s.origen.split('—')[0].trim()} → {s.destino_ciudad}</span>
-                  <span><Badge estado={s.estado} /></span>
+              {data.recientes.map((r) => (
+                <div key={r.numero} className="table-row cols-envios" onClick={() => navigate('/operacion-espejo')}>
+                  <span className="cell-id">{r.numero}</span>
+                  <span className="cell-main">{r.cliente}</span>
+                  <span><span className="badge" style={{ background: 'var(--neutral-soft)', color: 'var(--ink-500)' }}>{r.estado ?? '—'}</span></span>
+                  <span className="cell-strong">{r.monto_usd != null ? `$${Number(r.monto_usd).toLocaleString('es-VE', { maximumFractionDigits: 0 })}` : '—'}</span>
                 </div>
               ))}
             </div>
