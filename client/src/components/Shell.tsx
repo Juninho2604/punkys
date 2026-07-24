@@ -47,6 +47,7 @@ const TITULOS: Record<string, string> = {
   '/sistema': 'Sistema',
   '/catalogos': 'Catálogos operacionales',
   '/lineas': 'Líneas telefónicas',
+  '/notificaciones': 'Notificaciones',
   '/despacho': 'Despacho',
   '/visitas': 'Visitas de campo',
   '/usuarios': 'Usuarios',
@@ -146,6 +147,10 @@ export function Shell() {
                 <NavLink to="/lineas" className={({ isActive }) => `sidebar-item${isActive ? ' active' : ''}`}>
                   <Phone size={19} strokeWidth={2.2} />
                   {!collapsed && <span className="label">Líneas telefónicas</span>}
+                </NavLink>
+                <NavLink to="/notificaciones" className={({ isActive }) => `sidebar-item${isActive ? ' active' : ''}`}>
+                  <Bell size={19} strokeWidth={2.2} />
+                  {!collapsed && <span className="label">Notificaciones</span>}
                 </NavLink>
                 <NavLink to="/comisiones" className={({ isActive }) => `sidebar-item${isActive ? ' active' : ''}`}>
                   <HandCoins size={19} strokeWidth={2.2} />

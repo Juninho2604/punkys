@@ -23,6 +23,7 @@ import { reportesRouter } from './routes/reportes.js'
 import { tesoreriaRouter } from './routes/tesoreria.js'
 import { reposicionRouter } from './routes/reposicion.js'
 import { lineasRouter } from './routes/lineas.js'
+import { notifRouter } from './routes/notif.js'
 
 export function createApp() {
   const app = express()
@@ -54,6 +55,7 @@ export function createApp() {
   app.use('/api/tesoreria', tesoreriaRouter)
   app.use('/api/reposicion', reposicionRouter)
   app.use('/api/lineas', lineasRouter)
+  app.use('/api/notif', notifRouter)
 
   app.use(errorHandler)
   return app
